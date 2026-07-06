@@ -8,7 +8,8 @@ const formatPrice = (value) =>
   }).format(value);
 
 export default function ProductCard({ product, index }) {
-  const { addToCart, setSelectedProduct } = useApp();
+  const { setSelectedProduct, wishlistIds, toggleWishlist } = useApp();
+  const isWishlisted = wishlistIds.includes(product.id);
 
   return (
     <article
@@ -21,6 +22,18 @@ export default function ProductCard({ product, index }) {
         )}
 
         <img src={product.image} alt={product.name} loading="lazy" />
+
+        <button
+          className={`wishlist-card-btn ${isWishlisted ? 'active' : ''}`}
+          onClick={() => toggleWishlist(product.id)}
+          aria-label={
+            isWishlisted
+              ? `Bỏ ${product.name} khỏi yêu thích`
+              : `Thêm ${product.name} vào yêu thích`
+          }
+        >
+          <i className={isWishlisted ? 'ri-heart-fill' : 'ri-heart-line'}></i>
+        </button>
 
         <button
           className="quick-view-btn"
@@ -54,10 +67,10 @@ export default function ProductCard({ product, index }) {
 
       <button
         className="add-to-cart-btn"
-        onClick={() => addToCart(product)}
+        onClick={() => setSelectedProduct(product)}
       >
-        <i className="ri-shopping-cart-add-line"></i>
-        Thêm vào giỏ
+        <i className="ri-equalizer-3-line"></i>
+        Chọn phiên bản
       </button>
     </article>
   );

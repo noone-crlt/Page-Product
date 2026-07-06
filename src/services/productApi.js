@@ -15,3 +15,15 @@ export const getProducts = (params = {}) => {
 
 export const getProductById = (productId) =>
   apiClient(`/api/products/${encodeURIComponent(productId)}`);
+
+export const getProductReviews = (productId) =>
+  apiClient(`/api/products/${encodeURIComponent(productId)}/reviews`);
+
+export const createProductReview = (productId, ratingStars, comment) =>
+  apiClient(`/api/products/${encodeURIComponent(productId)}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify({
+      rating_stars: ratingStars,
+      comment,
+    }),
+  });

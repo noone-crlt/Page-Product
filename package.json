@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "antd": "^6.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "remixicon": "^4.2.0"

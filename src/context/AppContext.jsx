@@ -3,12 +3,14 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { CATEGORIES } from '../constants/productsData';
-import { getProducts, getProductById } from '../services/productApi';
+import { getProducts } from '../services/productApi';
 import { addCartItem, deleteCartItem, getCart } from '../services/cartApi';
 import { clearAuthTokens } from '../services/authApi';
+import { getWishlist, toggleWishlist as toggleWishlistApi } from '../services/wishlistApi';
 
 const AppContext = createContext(null);
 const CART_KEY = 'my_store_cart';
@@ -55,17 +57,48 @@ const mapProduct = (product) => ({
   price: Number(product.min_price || 0),
   originalPrice: Number(product.max_price || product.min_price || 0),
   discount: Number(product.discount_percentage || 0),
-  rating: Number(product.average_rating || 0),
+  rating: Number(product.average_rating || 0).toFixed(1),
   reviewsCount: Number(product.total_reviews || 0),
   soldCount: 0,
   stock: 0,
-  image: product.thumbnail_url || 'https://picsum.photos/seed/product/720/720',
+  image: product.thumbnail_url || product.image_url || product.images?.[0]?.image_url || 'https://picsum.photos/seed/product/720/720',
   createdAt: null,
   description: 'Thông tin chi tiết sản phẩm sẽ được cập nhật từ hệ thống.',
   colors: [],
   capacities: [],
   variants: [],
 });
+
+const mapCartItem = (item) => {
+  const variant = item.product_variant || item.variant || {};
+  const productData = item.product || variant.product || {};
+  const productId =
+    productData.product_id || item.product_id || variant.product_id || 0;
+  const price = Number(
+    item.sale_price || item.unit_price || variant.sale_price || variant.price || 0,
+  );
+
+  return {
+    cartItemId: item.cart_item_id,
+    quantity: Number(item.quantity || 1),
+    color: item.color || variant.color
+      ? { name: item.color || variant.color }
+      : null,
+    capacity: item.storage || variant.storage || null,
+    product: {
+      id: productId,
+      name: productData.name || item.product_name || 'Sản phẩm',
+      image:
+        productData.thumbnail_url ||
+        productData.image_url ||
+        productData.images?.[0]?.image_url ||
+        item.thumbnail_url ||
+        item.image_url ||
+        'https://picsum.photos/seed/cart-product/200/200',
+      price,
+    },
+  };
+};
 
 export const AppProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
@@ -84,6 +117,10 @@ export const AppProvider = ({ children }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [wishlistIds, setWishlistIds] = useState([]);
+  const [wishlistError, setWishlistError] = useState('');
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false);
+  const syncedTokenRef = useRef(null);
 
   const loadProducts = async () => {
     setIsProductsLoading(true);
@@ -123,126 +160,120 @@ export const AppProvider = ({ children }) => {
   const setRatingFilter = resetPage(setRatingFilterState);
   const setSortBy = resetPage(setSortByState);
 
-  const addLocalCartItem = (product, quantity, color, capacity, cartItemId) => {
-    setCart((items) => {
-      const index = items.findIndex(
-        (item) =>
-          item.product.id === product.id &&
-          item.color?.name === color?.name &&
-          item.capacity === capacity,
-      );
-
-      if (index < 0) {
-        return [
-          ...items,
-          { product, quantity, color, capacity, cartItemId },
-        ];
-      }
-
-      return items.map((item, itemIndex) =>
-        itemIndex === index
-          ? { ...item, quantity: item.quantity + quantity, cartItemId }
-          : item,
-      );
-    });
+  const loadCart = async () => {
+    const result = await getCart();
+    const data = result?.data || result || {};
+    const items = Array.isArray(data.items) ? data.items : [];
+    setCart(items.map(mapCartItem));
+    return result;
   };
 
-  const resolveVariant = async (product, color, capacity) => {
-    const result = await getProductById(product.id);
-    const detail = result?.data || result;
-    const variants = Array.isArray(detail?.variants) ? detail.variants : [];
-
-    return (
-      variants.find(
-        (variant) =>
-          (!color || variant.color === color.name) &&
-          (!capacity || variant.storage === capacity),
-      ) || variants[0]
-    );
+  const loadWishlist = async () => {
+    setIsWishlistLoading(true);
+    setWishlistError('');
+    try {
+      const result = await getWishlist();
+      const data = Array.isArray(result?.data) ? result.data : [];
+      setWishlistIds(
+        data
+          .map((item) => item.product_id || item.product?.product_id)
+          .filter(Boolean),
+      );
+      return result;
+    } catch (error) {
+      setWishlistError(
+        error.message || 'Không thể tải danh sách yêu thích.',
+      );
+      return null;
+    } finally {
+      setIsWishlistLoading(false);
+    }
   };
 
-  const addToCart = async (
-    product,
-    quantity = 1,
-    color = null,
-    capacity = null,
-  ) => {
+  const syncAccountData = async ({ force = false } = {}) => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) return;
+    if (!force && syncedTokenRef.current === accessToken) return;
+
+    syncedTokenRef.current = accessToken;
+    const [cartResult] = await Promise.allSettled([
+      loadCart(),
+      loadWishlist(),
+    ]);
+
+    if (cartResult.status === 'rejected') {
+      setCartError(
+        cartResult.reason?.message || 'Không thể tải giỏ hàng từ máy chủ.',
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (!localStorage.getItem('accessToken')) return;
+    setUser({ name: 'Tài khoản', email: '' });
+    syncAccountData();
+  }, []);
+
+  const addToCart = async (product, variant, quantity = 1) => {
     setCartError('');
-    const selectedColor = color || product.colors?.[0] || null;
-    const selectedCapacity = capacity || product.capacities?.[0] || null;
     const accessToken = localStorage.getItem('accessToken');
 
     if (!accessToken) {
-      addLocalCartItem(
-        product,
-        quantity,
-        selectedColor,
-        selectedCapacity,
-        null,
-      );
-      return;
+      setIsAuthOpen(true);
+      setCartError('Vui lòng đăng nhập trước khi thêm sản phẩm vào giỏ.');
+      return false;
     }
 
     try {
-      const variant = await resolveVariant(
-        product,
-        selectedColor,
-        selectedCapacity,
-      );
-
       if (!variant?.product_variant_id) {
         throw new Error('Sản phẩm chưa có biến thể để thêm vào giỏ.');
       }
 
-      const result = await addCartItem(variant.product_variant_id, quantity);
-      const resultData = result?.data || result;
-
-      addLocalCartItem(
-        product,
-        quantity,
-        selectedColor,
-        selectedCapacity,
-        resultData?.cart_item_id || null,
-      );
+      await addCartItem(variant.product_variant_id, quantity);
+      await loadCart();
+      return true;
     } catch (error) {
       setCartError(error.message || 'Không thể thêm sản phẩm vào giỏ.');
+      return false;
     }
   };
 
   const removeFromCart = async (productId, colorName, capacity) => {
-    const item = cart.find(
-      (cartItem) =>
+    const item = cart.find((cartItem) => {
+      if (cartItem.cartItemId === productId) return true;
+      return (
         cartItem.product.id === productId &&
         cartItem.color?.name === colorName &&
-        cartItem.capacity === capacity,
-    );
+        cartItem.capacity === capacity
+      );
+    });
 
     try {
       if (item?.cartItemId && localStorage.getItem('accessToken')) {
         await deleteCartItem(item.cartItemId);
       }
 
-      setCart((items) => items.filter((cartItem) => cartItem !== item));
+      await loadCart();
     } catch (error) {
       setCartError(error.message || 'Không thể xóa sản phẩm khỏi giỏ.');
     }
   };
 
-  const updateCartQuantity = (productId, colorName, capacity, quantity) => {
-    if (quantity <= 0) {
-      removeFromCart(productId, colorName, capacity);
-      return;
+  const toggleWishlist = async (productId) => {
+    if (!localStorage.getItem('accessToken')) {
+      setIsAuthOpen(true);
+      return false;
     }
 
-    setCart((items) =>
-      items.map((item) =>
-        item.product.id === productId &&
-        item.color?.name === colorName &&
-        item.capacity === capacity
-          ? { ...item, quantity }
-          : item,
-      ),
-    );
+    setWishlistError('');
+    try {
+      await toggleWishlistApi(productId);
+      await loadWishlist();
+      return true;
+    } catch (error) {
+      setWishlistError(error.message || 'Không thể cập nhật danh sách yêu thích.');
+      return false;
+    }
   };
 
   const toggleBrand = (brand) => {
@@ -323,19 +354,15 @@ export const AppProvider = ({ children }) => {
   const login = async (userData) => {
     setUser(userData);
     setIsAuthOpen(false);
-
-    try {
-      await getCart();
-      setCartError('');
-    } catch (error) {
-      setCartError(error.message || 'Không thể tải giỏ hàng từ máy chủ.');
-    }
+    await syncAccountData({ force: true });
   };
 
   const logout = () => {
     clearAuthTokens();
+    syncedTokenRef.current = null;
     setUser(null);
     setCart([]);
+    setWishlistIds([]);
   };
 
   return (
@@ -349,8 +376,13 @@ export const AppProvider = ({ children }) => {
         cartError,
         addToCart,
         removeFromCart,
-        updateCartQuantity,
         clearCart: () => setCart([]),
+        loadCart,
+        wishlistIds,
+        wishlistError,
+        isWishlistLoading,
+        reloadWishlist: loadWishlist,
+        toggleWishlist,
         searchQuery,
         setSearchQuery,
         activeCategory,

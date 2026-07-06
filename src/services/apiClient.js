@@ -27,7 +27,7 @@ export const apiClient = async (path, options = {}) => {
   const accessToken = localStorage.getItem('accessToken');
   const headers = new Headers(options.headers || {});
 
-  headers.set('Content-Type', 'application/json');
+  headers.set('Content-Type', 'application/json; charset=utf-8');
 
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`);
