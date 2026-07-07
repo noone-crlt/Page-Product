@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { CATEGORIES } from '../../constants/productsData';
+import { canAccessDashboard } from '../../services/authApi';
 
 const formatPrice = (value) =>
   new Intl.NumberFormat('vi-VN', {
@@ -33,6 +34,7 @@ export default function Header() {
   const accountRef = useRef(null);
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const hasDashboardAccess = canAccessDashboard();
   const categoryLabel =
     CATEGORIES.find((item) => item.key === activeCategory)?.label ||
     'Danh mục';
@@ -226,6 +228,12 @@ export default function Header() {
 
                   <div className="account-menu-footer">
                     <span>{user.email || 'Tài khoản My Store'}</span>
+                    {hasDashboardAccess && (
+                      <a href="/admin" role="menuitem" className="account-admin-link">
+                        <i className="ri-dashboard-line"></i>
+                        Trang quản trị
+                      </a>
+                    )}
                     <button onClick={handleLogout} role="menuitem">
                       <i className="ri-logout-box-r-line"></i>
                       Đăng xuất

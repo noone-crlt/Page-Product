@@ -363,6 +363,10 @@ export const AppProvider = ({ children }) => {
     setUser(null);
     setCart([]);
     setWishlistIds([]);
+
+    if (window.location.pathname.startsWith('/admin')) {
+      window.location.href = '/';
+    }
   };
 
   return (
