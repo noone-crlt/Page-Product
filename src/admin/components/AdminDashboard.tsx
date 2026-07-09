@@ -52,16 +52,11 @@ import type {
   NotificationKind,
 } from '../types/dashboard';
 import '../styles/admin-dashboard.css';
+import { AdminSidebar } from './AdminSidebar';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
-const sidebarItems = [
-  { label: 'Tổng quan', icon: House, active: true, href: '/admin' },
-  { label: 'Đơn hàng', icon: Receipt, href: '/admin/orders' },
-  { label: 'Sản phẩm', icon: Package, href: '/admin/products' },
-  { label: 'Khách hàng', icon: Users, href: '/admin/customers' },
-  { label: 'Marketing', icon: Megaphone, href: '/admin/marketing' },
-];
+
 
 const activityIcons: Record<ActivityKind, typeof ShoppingCart> = {
   order: ShoppingCart,
@@ -307,18 +302,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-shell">
-      <button className={`admin-sidebar-backdrop ${sidebarOpen ? 'is-visible' : ''}`} aria-label="Đóng menu" onClick={() => setSidebarOpen(false)} />
-      <aside className={`admin-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
-        <div className="admin-brand"><span><ChartLineUp size={23} weight="bold" /></span><strong>My Store</strong><button aria-label="Đóng menu" onClick={() => setSidebarOpen(false)}><X size={18} /></button></div>
-        <nav aria-label="Điều hướng quản trị">
-          <small>Không gian làm việc</small>
-          {sidebarItems.map(({ label, icon: Icon, active, href }, index) => <button key={label} className={active ? 'active' : ''} onClick={() => { if (href) window.location.href = href; }}><Icon size={19} weight={active ? 'fill' : 'regular'} /><span>{label}</span>{index === 1 && <b>12</b>}</button>)}
-        </nav>
-        <div className="admin-sidebar__bottom">
-          <a href="/"><Storefront size={19} />Xem cửa hàng</a>
-          <div className="admin-profile-mini"><span>{userInitials}</span><div><strong>{userName}</strong><small>{userRole}</small></div><SignOut size={18} onClick={logout} style={{ cursor: 'pointer' }} /></div>
-        </div>
-      </aside>
+      <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <main className="admin-main">
         <header className="admin-header">

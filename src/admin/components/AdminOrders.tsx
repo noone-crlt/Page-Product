@@ -29,6 +29,7 @@ import {
 import { useNotifications } from '../hooks/useNotifications';
 import { apiClient } from '../../services/apiClient';
 import '../styles/admin-dashboard.css';
+import { AdminSidebar } from './AdminSidebar';
 
 interface MockOrder {
   order_id: number;
@@ -55,13 +56,7 @@ const mockOrdersData: MockOrder[] = [
 
 const PAGE_SIZE = 6;
 
-const navigation = [
-  { label: 'Tổng quan', icon: House, href: '/admin' },
-  { label: 'Đơn hàng', icon: Receipt, href: '/admin/orders', active: true },
-  { label: 'Sản phẩm', icon: Package, href: '/admin/products' },
-  { label: 'Khách hàng', icon: Users, href: '/admin/customers' },
-  { label: 'Marketing', icon: Megaphone, href: '/admin/marketing' },
-];
+
 
 const statusOptions = [
   { value: 'all', label: 'Tất cả' },
@@ -283,12 +278,7 @@ export default function AdminOrders() {
   useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
 
   return <div className="admin-shell">
-    <button className={`admin-sidebar-backdrop ${sidebarOpen ? 'is-visible' : ''}`} aria-label="Đóng menu" onClick={() => setSidebarOpen(false)} />
-    <aside className={`admin-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
-      <div className="admin-brand"><span><ChartLineUp size={23} weight="bold" /></span><strong>My Store</strong><button aria-label="Đóng menu" onClick={() => setSidebarOpen(false)}><X size={18} /></button></div>
-      <nav aria-label="Điều hướng quản trị"><small>Không gian làm việc</small>{navigation.map(({ label, icon: Icon, href, active }, index) => <button key={label} className={active ? 'active' : ''} onClick={() => href && (window.location.href = href)}><Icon size={19} weight={active ? 'fill' : 'regular'} /><span>{label}</span>{index === 1 && <b>12</b>}</button>)}</nav>
-      <div className="admin-sidebar__bottom"><a href="/"><Storefront size={19} />Xem cửa hàng</a><div className="admin-profile-mini"><span>{userInitials}</span><div><strong>{userName}</strong><small>{userRole}</small></div><SignOut size={18} onClick={logout} style={{ cursor: 'pointer' }} /></div></div>
-    </aside>
+    <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
     <main className="admin-main">
       <header className="admin-header"><button className="admin-menu-button" aria-label="Mở menu" onClick={() => setSidebarOpen(true)}><List size={22} /></button>
