@@ -246,7 +246,7 @@ export default function AdminOrders() {
     const waiting = orders.filter((order) => order.status === 'Pending' || order.status === 'Processing').length;
     const delivering = orders.filter((order) => order.status === 'Shipped').length;
     const revenue = orders
-      .filter((order) => order.status === 'Delivered')
+      .filter((order) => order.status === 'Delivered' || order.status === 'Success')
       .reduce((sum, order) => sum + order.total_amount, 0);
     return [
       { label: 'Đơn cần xử lý', value: waiting.toLocaleString('vi-VN'), icon: Clock, tone: 'amber' },
