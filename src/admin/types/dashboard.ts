@@ -54,6 +54,7 @@ export interface TopProduct {
   revenue: number;
   growth: number;
   stock: number;
+  image?: string;
 }
 
 export interface DashboardFilters {

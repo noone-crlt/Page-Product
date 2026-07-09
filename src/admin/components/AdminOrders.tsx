@@ -78,6 +78,8 @@ const statusMap: Record<string, { label: string; color: string }> = {
   Shipped: { label: 'Đang giao', color: 'purple' },
   Delivered: { label: 'Hoàn thành', color: 'green' },
   Cancelled: { label: 'Đã hủy', color: 'red' },
+  Success: { label: 'Hoàn thành', color: 'green' },
+  Canceled: { label: 'Đã hủy', color: 'red' },
 };
 
 const formatCurrency = (value?: number | string) =>
@@ -85,17 +87,19 @@ const formatCurrency = (value?: number | string) =>
     .format(Number(value || 0))
     .replace('₫', 'VNĐ');
 
-const formatDate = (isoString: string) =>
-  new Intl.DateTimeFormat('vi-VN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(isoString.endsWith('Z') ? isoString : isoString + 'Z'));
+const formatDate = (isoString: string) => {
+  const d = new Date(isoString.endsWith('Z') ? isoString : isoString + 'Z');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const DD = String(d.getDate()).padStart(2, '0');
+  const MM = String(d.getMonth() + 1).padStart(2, '0');
+  const YYYY = d.getFullYear();
+  return `${hh}:${mm} ${DD}/${MM}/${YYYY}`;
+};
 
 const getInitials = (name?: string) => {
-  if (!name) return 'AD';
+  if (!name) return 'KH';
+  if (/^\d+$/.test(name)) return 'KH';
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();

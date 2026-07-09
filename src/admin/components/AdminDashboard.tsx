@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { DatePicker } from 'antd';
+import dayjs, { Dayjs } from 'dayjs';
 import { useApp } from '../../context/AppContext';
 import { useNotifications } from '../hooks/useNotifications';
 import {
@@ -41,6 +43,7 @@ import {
 } from '@phosphor-icons/react';
 import { formatCurrency, formatMetric, getFilteredDashboardData } from '../data/dashboardData';
 import { getDashboardStats, getTopSelling, getRevenueLast7Days, getRevenueByCategory } from '../../services/dashboardApi';
+import { apiClient } from '../../services/apiClient';
 import type {
   ActivityKind,
   DashboardFilters,
@@ -124,8 +127,10 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [showAllNotifs, setShowAllNotifs] = useState(false);
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
 
+  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null]>([dayjs().subtract(7, 'day'), dayjs()]);
   const [data, setData] = useState(() => getFilteredDashboardData(filters));
   const [loading, setLoading] = useState(true);
 
@@ -134,20 +139,15 @@ export default function AdminDashboard() {
     const fetchApiData = async () => {
       setLoading(true);
       try {
-        const toDateObj = new Date();
-        const fromDateObj = new Date();
-        if (filters.period === '7d') fromDateObj.setDate(fromDateObj.getDate() - 7);
-        else if (filters.period === '30d') fromDateObj.setDate(fromDateObj.getDate() - 30);
-        else if (filters.period === '90d') fromDateObj.setDate(fromDateObj.getDate() - 90);
-        
-        const toDateStr = toDateObj.toISOString();
-        const fromDateStr = fromDateObj.toISOString();
+        const fromDateStr = dateRange[0] ? dateRange[0].toISOString() : undefined;
+        const toDateStr = dateRange[1] ? dateRange[1].toISOString() : undefined;
 
-        const [statsRes, topSellingRes, revenueRes, categoryRes] = await Promise.all([
+        const [statsRes, topSellingRes, revenueRes, categoryRes, productsRes] = await Promise.all([
           getDashboardStats(fromDateStr, toDateStr).catch(() => null),
           getTopSelling(fromDateStr, toDateStr).catch(() => null),
           getRevenueLast7Days(fromDateStr, toDateStr).catch(() => null),
           getRevenueByCategory(fromDateStr, toDateStr).catch(() => null),
+          apiClient('/api/products').catch(() => null),
         ]);
 
         if (!isMounted) return;
@@ -177,6 +177,17 @@ export default function AdminDashboard() {
 
         let newTopProducts = mockData.topProducts;
         if (topSellingRes?.data?.length) {
+          const imageMap: Record<number, string> = {};
+          if (productsRes?.data) {
+            productsRes.data.forEach((p: any) => {
+              if (p.thumbnail_url) imageMap[p.product_id] = p.thumbnail_url;
+              else if (p.image_url) imageMap[p.product_id] = p.image_url;
+              else if (p.images && p.images[0]) {
+                imageMap[p.product_id] = p.images[0].image_url || p.images[0];
+              }
+            });
+          }
+
           newTopProducts = topSellingRes.data.map((p: any) => {
             const totalStock =
               p.variants?.reduce((sum: number, v: any) => sum + v.stock_quantity, 0) || 0;
@@ -188,18 +199,19 @@ export default function AdminDashboard() {
               revenue: p.total_revenue,
               growth: 0,
               stock: totalStock,
+              image: imageMap[p.product_id]
             };
           });
         }
 
         let newChannels = mockData.channels;
         if (categoryRes?.data?.length) {
-          const totalRev = categoryRes.data.reduce((sum: number, item: any) => sum + Number(item.total_revenue), 0);
+          const totalRev = categoryRes.data.reduce((sum: number, item: any) => sum + Number(item.total_revenue || item.revenue || 0), 0);
           const colors = ['#1463df', '#21a875', '#e4a72d', '#8b5cf6', '#ec4899', '#f43f5e', '#c9d1dc'];
           newChannels = categoryRes.data.map((item: any, index: number) => ({
             id: `cat-${index}`,
             label: item.category_name,
-            value: totalRev > 0 ? Math.round((Number(item.total_revenue) / totalRev) * 100) : 0,
+            value: totalRev > 0 ? Math.round((Number(item.total_revenue || item.revenue || 0) / totalRev) * 100) : 0,
             color: colors[index % colors.length],
           }));
         }
@@ -225,7 +237,7 @@ export default function AdminDashboard() {
     return () => {
       isMounted = false;
     };
-  }, [filters]);
+  }, [dateRange]);
   const revenueChartData = useMemo<ChartData<'line'>>(() => ({
     labels: data.revenue.map((point) => point.label),
     datasets: [{
@@ -279,9 +291,17 @@ export default function AdminDashboard() {
     },
   }), []);
 
-  const updateFilter = <Key extends keyof DashboardFilters>(key: Key, value: DashboardFilters[Key]) => {
+  const updateFilter = (key: keyof DashboardFilters, value: any) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    if (key === 'period') {
+      const end = dayjs();
+      let start = end;
+      if (value === '7d') start = end.subtract(7, 'day');
+      else if (value === '30d') start = end.subtract(30, 'day');
+      else if (value === '90d') start = end.subtract(90, 'day');
+      setDateRange([start, end]);
+    }
     setStatus('loading');
-    setFilters((current) => ({ ...current, [key]: value }));
     window.setTimeout(() => setStatus('success'), 380);
   };
 
@@ -337,16 +357,18 @@ export default function AdminDashboard() {
         <div className="admin-content">
           <section className="admin-page-heading">
             <div><span className="admin-eyebrow">Trung tâm vận hành</span><h1>Tổng quan kinh doanh</h1><p>Theo dõi hiệu suất cửa hàng và những việc cần chú ý hôm nay.</p></div>
-            <div className="admin-date"><CalendarBlank size={19} /><span><small>Kỳ báo cáo</small><strong>
-              {(() => {
-                const end = new Date();
-                const start = new Date();
-                if (filters.period === '7d') start.setDate(start.getDate() - 7);
-                else if (filters.period === '30d') start.setDate(start.getDate() - 30);
-                else if (filters.period === '90d') start.setDate(start.getDate() - 90);
-                return `${start.toLocaleDateString('vi-VN')} — ${end.toLocaleDateString('vi-VN')}`;
-              })()}
-            </strong></span></div>
+            <div className="admin-date" style={{ padding: '0 8px', border: '1px solid var(--admin-line)' }}>
+              <DatePicker.RangePicker 
+                value={[dateRange[0], dateRange[1]]} 
+                onChange={(dates: any) => setDateRange(dates || [null, null])} 
+                format="DD/MM/YYYY"
+                variant="borderless"
+                style={{ width: '100%', cursor: 'pointer', fontWeight: 600, color: 'var(--admin-ink)' }}
+                suffixIcon={<CalendarBlank size={19} color="var(--admin-blue)" />}
+                placeholder={['Từ ngày', 'Đến ngày']}
+                allowClear={false}
+              />
+            </div>
           </section>
 
           <section className="admin-filterbar" aria-label="Bộ lọc dashboard">
@@ -361,10 +383,36 @@ export default function AdminDashboard() {
                 <article className="admin-panel admin-panel--revenue"><div className="admin-panel__heading"><div><span>Doanh thu</span><h2>Xu hướng theo ngày</h2></div><span className="admin-live"><i />Dữ liệu trực tiếp</span></div><div className="admin-chart" role="img" aria-label="Biểu đồ đường thể hiện doanh thu theo ngày"><Line data={revenueChartData} options={revenueChartOptions} /></div></article>
                 <article className="admin-panel admin-panel--channel"><div className="admin-panel__heading"><div><span>Phân bổ</span><h2>Theo danh mục</h2></div></div><div className="admin-donut" style={{ background: `conic-gradient(${data.channels.map((channel, index) => `${channel.color} ${data.channels.slice(0, index).reduce((sum, item) => sum + item.value, 0)}% ${data.channels.slice(0, index + 1).reduce((sum, item) => sum + item.value, 0)}%`).join(',')})` }}><div><strong>100%</strong><span>doanh thu</span></div></div><div className="admin-legend">{data.channels.map((channel) => <div key={channel.id}><i style={{ background: channel.color }} /><span>{channel.label}</span><strong>{channel.value}%</strong></div>)}</div></article>
                 <article className="admin-panel admin-panel--activity"><div className="admin-panel__heading"><div><span>Cập nhật</span><h2>Hoạt động gần đây</h2></div><button>Xem tất cả</button></div><div className="admin-activity-list">{notifications.slice(0, 5).map((n, index) => { let kind: ActivityKind = 'payment'; if (n.originalType === 'order') kind = 'order'; else if (n.originalType === 'customer' || n.originalType === 'user') kind = 'customer'; else if (n.originalType === 'stock') kind = 'stock'; const Icon = activityIcons[kind]; return <div key={n.id} style={{ '--delay': `${index * 70}ms` } as React.CSSProperties}><span className={`activity-icon activity-icon--${kind}`}><Icon size={17} /></span><p><strong>{n.title}</strong><span>{n.detail}</span><small>{n.time}</small></p></div>; })}</div></article>
-                <article className="admin-panel admin-panel--notice"><div className="admin-panel__heading"><div><span>Ưu tiên</span><h2>Thông báo</h2></div><b>{unreadCount}</b></div><div className="admin-notice-list">{notifications.map((item) => { const Icon = notificationIcons[item.kind]; return <div key={item.id} className={item.unread ? 'is-unread' : ''} style={{ cursor: item.targetType === 'Order' ? 'pointer' : 'default' }} onClick={() => { if(item.targetType === 'Order' && item.targetId) window.location.href = `/admin/orders?id=${item.targetId}` }}><span className={`notice-icon notice-icon--${item.kind}`}><Icon size={17} /></span><p><strong>{item.title}</strong><span>{item.detail}</span><small>{item.time}</small></p></div>; })}</div></article>
+                <article className="admin-panel admin-panel--notice">
+                  <div className="admin-panel__heading">
+                    <div><span>Ưu tiên</span><h2>Thông báo</h2></div>
+                    <b>{unreadCount}</b>
+                  </div>
+                  <div className="admin-notice-list">
+                    {(showAllNotifs ? notifications : notifications.slice(0, 4)).map((item) => { 
+                      const Icon = notificationIcons[item.kind]; 
+                      return (
+                        <div key={item.id} className={item.unread ? 'is-unread' : ''} style={{ cursor: item.targetType === 'Order' ? 'pointer' : 'default' }} onClick={() => { if(item.targetType === 'Order' && item.targetId) window.location.href = `/admin/orders?id=${item.targetId}` }}>
+                          <span className={`notice-icon notice-icon--${item.kind}`}><Icon size={17} /></span>
+                          <p><strong>{item.title}</strong><span>{item.detail}</span><small>{item.time}</small></p>
+                        </div>
+                      ); 
+                    })}
+                  </div>
+                  {notifications.length > 4 && (
+                    <button 
+                      onClick={() => setShowAllNotifs(!showAllNotifs)} 
+                      style={{ marginTop: '16px', width: '100%', padding: '8px', border: '1px solid var(--admin-line)', background: 'transparent', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: 'var(--admin-muted)', fontWeight: 600, transition: '0.2s' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = 'var(--admin-ink)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--admin-muted)'; }}
+                    >
+                      {showAllNotifs ? 'Thu gọn' : `Xem thêm ${notifications.length - 4} thông báo`}
+                    </button>
+                  )}
+                </article>
               </section>
 
-              <section className="admin-panel admin-products-panel"><div className="admin-panel__heading"><div><span>Hiệu suất</span><h2>Sản phẩm bán chạy</h2></div><button>Xuất báo cáo</button></div>{data.topProducts.length ? <div className="admin-table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Danh mục</th><th>Đã bán</th><th>Doanh thu</th><th>Tăng trưởng</th><th>Tồn kho</th></tr></thead><tbody>{data.topProducts.map((product) => <tr key={product.id}><td><span className="admin-product-thumb">{product.name.charAt(0)}</span><div><strong>{product.name}</strong><small>{product.id}</small></div></td><td>{product.category}</td><td>{product.sold.toLocaleString('vi-VN')}</td><td>{formatCurrency(product.revenue)}</td><td><span className={product.growth >= 0 ? 'growth-positive' : 'growth-negative'}>{product.growth >= 0 ? '+' : ''}{product.growth}%</span></td><td><span className={product.stock < 10 ? 'stock-low' : ''}>{product.stock}</span></td></tr>)}</tbody></table></div> : <div className="admin-empty"><MagnifyingGlass size={34} /><h3>Không tìm thấy sản phẩm</h3><p>Hãy thử từ khóa khác hoặc xóa nội dung tìm kiếm.</p><button onClick={() => updateFilter('query', '')}>Xóa tìm kiếm</button></div>}</section>
+              <section className="admin-panel admin-products-panel"><div className="admin-panel__heading"><div><span>Hiệu suất</span><h2>Sản phẩm bán chạy</h2></div><button>Xuất báo cáo</button></div>{data.topProducts.length ? <div className="admin-table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Danh mục</th><th>Đã bán</th><th>Doanh thu</th><th>Tăng trưởng</th><th>Tồn kho</th></tr></thead><tbody>{data.topProducts.map((product) => <tr key={product.id}><td>{product.image ? <img src={product.image} alt={product.name} className="admin-product-thumb" style={{ objectFit: 'cover' }} /> : <span className="admin-product-thumb">{product.name.charAt(0)}</span>}<div><strong>{product.name}</strong><small>{product.id}</small></div></td><td>{product.category}</td><td>{product.sold.toLocaleString('vi-VN')}</td><td>{formatCurrency(product.revenue)}</td><td><span className={product.growth >= 0 ? 'growth-positive' : 'growth-negative'}>{product.growth >= 0 ? '+' : ''}{product.growth}%</span></td><td><span className={product.stock < 10 ? 'stock-low' : ''}>{product.stock}</span></td></tr>)}</tbody></table></div> : <div className="admin-empty"><MagnifyingGlass size={34} /><h3>Không tìm thấy sản phẩm</h3><p>Hãy thử từ khóa khác hoặc xóa nội dung tìm kiếm.</p><button onClick={() => updateFilter('query', '')}>Xóa tìm kiếm</button></div>}</section>
             </>
           )}
         </div>

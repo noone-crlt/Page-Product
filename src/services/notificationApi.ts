@@ -7,6 +7,7 @@ export const createNotificationHubConnection = () => {
   return new signalR.HubConnectionBuilder()
     .withUrl(NOTIFICATION_HUB_URL, {
       accessTokenFactory: () => localStorage.getItem('accessToken') || '',
+      transport: signalR.HttpTransportType.LongPolling // Force LongPolling to bypass WS Auth missing in Backend
     })
     .withAutomaticReconnect([0, 2000, 5000, 10000])
     .configureLogging(signalR.LogLevel.Warning)
