@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useNotifications } from '../hooks/useNotifications';
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -39,7 +40,7 @@ import {
   Target,
 } from '@phosphor-icons/react';
 import { formatCurrency, formatMetric, getFilteredDashboardData } from '../data/dashboardData';
-import { getDashboardStats, getTopSelling, getRevenueLast7Days } from '../../services/dashboardApi';
+import { getDashboardStats, getTopSelling, getRevenueLast7Days, getRevenueByCategory } from '../../services/dashboardApi';
 import type {
   ActivityKind,
   DashboardFilters,
@@ -52,11 +53,11 @@ import '../styles/admin-dashboard.css';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 const sidebarItems = [
-  { label: 'Tổng quan', icon: House, active: true },
-  { label: 'Đơn hàng', icon: Receipt },
-  { label: 'Sản phẩm', icon: Package },
-  { label: 'Khách hàng', icon: Users },
-  { label: 'Marketing', icon: Megaphone },
+  { label: 'Tổng quan', icon: House, active: true, href: '/admin' },
+  { label: 'Đơn hàng', icon: Receipt, href: '/admin/orders' },
+  { label: 'Sản phẩm', icon: Package, href: '/admin/products' },
+  { label: 'Khách hàng', icon: Users, href: '/admin/customers' },
+  { label: 'Marketing', icon: Megaphone, href: '/admin/marketing' },
 ];
 
 const activityIcons: Record<ActivityKind, typeof ShoppingCart> = {
@@ -109,9 +110,9 @@ const DashboardSkeleton = () => (
 
 export default function AdminDashboard() {
   const { user, logout } = useApp();
-  const appUser = user as { name?: string; email?: string } | null;
-  const userName = appUser?.name || '';
-  const userRole = appUser?.email || 'Quản trị viên';
+  const appUser = user as { name?: string; email?: string; role?: string; isAdmin?: boolean } | null;
+  const userName = appUser?.name || 'Tài khoản';
+  const userRole = appUser?.isAdmin ? 'Quản trị viên' : (appUser?.role === '2' ? 'Quản trị viên' : 'Nhân viên');
   const userInitials = userName 
     ? (userName.split(' ').length >= 2 
         ? (userName.split(' ')[0][0] + userName.split(' ')[userName.split(' ').length - 1][0]).toUpperCase() 
@@ -123,6 +124,7 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const { notifications, unreadCount, markAllAsRead } = useNotifications();
 
   const [data, setData] = useState(() => getFilteredDashboardData(filters));
   const [loading, setLoading] = useState(true);
@@ -132,10 +134,20 @@ export default function AdminDashboard() {
     const fetchApiData = async () => {
       setLoading(true);
       try {
-        const [statsRes, topSellingRes, revenueRes] = await Promise.all([
-          getDashboardStats().catch(() => null),
-          getTopSelling().catch(() => null),
-          getRevenueLast7Days().catch(() => null),
+        const toDateObj = new Date();
+        const fromDateObj = new Date();
+        if (filters.period === '7d') fromDateObj.setDate(fromDateObj.getDate() - 7);
+        else if (filters.period === '30d') fromDateObj.setDate(fromDateObj.getDate() - 30);
+        else if (filters.period === '90d') fromDateObj.setDate(fromDateObj.getDate() - 90);
+        
+        const toDateStr = toDateObj.toISOString();
+        const fromDateStr = fromDateObj.toISOString();
+
+        const [statsRes, topSellingRes, revenueRes, categoryRes] = await Promise.all([
+          getDashboardStats(fromDateStr, toDateStr).catch(() => null),
+          getTopSelling(fromDateStr, toDateStr).catch(() => null),
+          getRevenueLast7Days(fromDateStr, toDateStr).catch(() => null),
+          getRevenueByCategory(fromDateStr, toDateStr).catch(() => null),
         ]);
 
         if (!isMounted) return;
@@ -180,11 +192,24 @@ export default function AdminDashboard() {
           });
         }
 
+        let newChannels = mockData.channels;
+        if (categoryRes?.data?.length) {
+          const totalRev = categoryRes.data.reduce((sum: number, item: any) => sum + Number(item.total_revenue), 0);
+          const colors = ['#1463df', '#21a875', '#e4a72d', '#8b5cf6', '#ec4899', '#f43f5e', '#c9d1dc'];
+          newChannels = categoryRes.data.map((item: any, index: number) => ({
+            id: `cat-${index}`,
+            label: item.category_name,
+            value: totalRev > 0 ? Math.round((Number(item.total_revenue) / totalRev) * 100) : 0,
+            color: colors[index % colors.length],
+          }));
+        }
+
         setData({
           ...mockData,
           metrics: newMetrics,
           revenue: newRevenue,
           topProducts: newTopProducts,
+          channels: newChannels,
         });
         setStatus('success');
       } catch (err) {
@@ -267,7 +292,7 @@ export default function AdminDashboard() {
         <div className="admin-brand"><span><ChartLineUp size={23} weight="bold" /></span><strong>My Store</strong><button aria-label="Đóng menu" onClick={() => setSidebarOpen(false)}><X size={18} /></button></div>
         <nav aria-label="Điều hướng quản trị">
           <small>Không gian làm việc</small>
-          {sidebarItems.map(({ label, icon: Icon, active }, index) => <button key={label} className={active ? 'active' : ''} onClick={() => { if (index === 0) window.location.href = '/admin'; if (index === 2) window.location.href = '/admin/products'; }}><Icon size={19} weight={active ? 'fill' : 'regular'} /><span>{label}</span>{index === 1 && <b>12</b>}</button>)}
+          {sidebarItems.map(({ label, icon: Icon, active, href }, index) => <button key={label} className={active ? 'active' : ''} onClick={() => { if (href) window.location.href = href; }}><Icon size={19} weight={active ? 'fill' : 'regular'} /><span>{label}</span>{index === 1 && <b>12</b>}</button>)}
         </nav>
         <div className="admin-sidebar__bottom">
           <a href="/"><Storefront size={19} />Xem cửa hàng</a>
@@ -280,7 +305,7 @@ export default function AdminDashboard() {
           <button className="admin-menu-button" aria-label="Mở menu" onClick={() => setSidebarOpen(true)}><List size={22} /></button>
           <label className="admin-search"><MagnifyingGlass size={18} /><span className="sr-only">Tìm kiếm sản phẩm</span><input value={filters.query} onChange={(event) => updateFilter('query', event.target.value)} placeholder="Tìm sản phẩm, mã sản phẩm..." /></label>
           <div className="admin-header__actions">
-            <button className="admin-notification-button" aria-label="Thông báo" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((value) => !value)}><Bell size={20} /><span /></button>
+            <button className="admin-notification-button" aria-label="Thông báo" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((value) => !value)}><Bell size={20} />{unreadCount > 0 && <span />}</button>
             <div className="admin-header-profile-wrapper">
               <button 
                 className={`admin-header-profile ${profileOpen ? 'is-active' : ''}`}
@@ -305,14 +330,23 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
-            {notificationsOpen && <div className="admin-notification-popover"><strong>Thông báo mới</strong>{data.notifications.filter((item) => item.unread).map((item) => <p key={item.id}>{item.title}<small>{item.time} trước</small></p>)}</div>}
+            {notificationsOpen && <div className="admin-notification-popover"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><strong>Thông báo mới</strong>{unreadCount > 0 && <button onClick={markAllAsRead} style={{ fontSize: 11, color: '#1463df', border: 0, background: 'none', cursor: 'pointer' }}>Đánh dấu đã đọc</button>}</div>{notifications.map((item) => <p key={item.id} className={item.unread ? 'is-unread' : ''} style={{ cursor: item.targetType === 'Order' ? 'pointer' : 'default' }} onClick={() => { if(item.targetType === 'Order' && item.targetId) window.location.href = `/admin/orders?id=${item.targetId}` }}>{item.title}<small>{item.time}</small></p>)}</div>}
           </div>
         </header>
 
         <div className="admin-content">
           <section className="admin-page-heading">
             <div><span className="admin-eyebrow">Trung tâm vận hành</span><h1>Tổng quan kinh doanh</h1><p>Theo dõi hiệu suất cửa hàng và những việc cần chú ý hôm nay.</p></div>
-            <div className="admin-date"><CalendarBlank size={19} /><span><small>Kỳ báo cáo</small><strong>01/06/2026 — 30/06/2026</strong></span></div>
+            <div className="admin-date"><CalendarBlank size={19} /><span><small>Kỳ báo cáo</small><strong>
+              {(() => {
+                const end = new Date();
+                const start = new Date();
+                if (filters.period === '7d') start.setDate(start.getDate() - 7);
+                else if (filters.period === '30d') start.setDate(start.getDate() - 30);
+                else if (filters.period === '90d') start.setDate(start.getDate() - 90);
+                return `${start.toLocaleDateString('vi-VN')} — ${end.toLocaleDateString('vi-VN')}`;
+              })()}
+            </strong></span></div>
           </section>
 
           <section className="admin-filterbar" aria-label="Bộ lọc dashboard">
@@ -325,9 +359,9 @@ export default function AdminDashboard() {
               <section className="admin-metrics" aria-label="Chỉ số kinh doanh">{data.metrics.map((metric, index) => <MetricCard key={metric.id} metric={metric} index={index} />)}</section>
               <section className="admin-overview-grid">
                 <article className="admin-panel admin-panel--revenue"><div className="admin-panel__heading"><div><span>Doanh thu</span><h2>Xu hướng theo ngày</h2></div><span className="admin-live"><i />Dữ liệu trực tiếp</span></div><div className="admin-chart" role="img" aria-label="Biểu đồ đường thể hiện doanh thu theo ngày"><Line data={revenueChartData} options={revenueChartOptions} /></div></article>
-                <article className="admin-panel admin-panel--channel"><div className="admin-panel__heading"><div><span>Phân bổ</span><h2>Kênh bán hàng</h2></div></div><div className="admin-donut" style={{ background: `conic-gradient(${data.channels.map((channel, index) => `${channel.color} ${data.channels.slice(0, index).reduce((sum, item) => sum + item.value, 0)}% ${data.channels.slice(0, index + 1).reduce((sum, item) => sum + item.value, 0)}%`).join(',')})` }}><div><strong>100%</strong><span>doanh thu</span></div></div><div className="admin-legend">{data.channels.map((channel) => <div key={channel.id}><i style={{ background: channel.color }} /><span>{channel.label}</span><strong>{channel.value}%</strong></div>)}</div></article>
-                <article className="admin-panel admin-panel--activity"><div className="admin-panel__heading"><div><span>Cập nhật</span><h2>Hoạt động gần đây</h2></div><button>Xem tất cả</button></div><div className="admin-activity-list">{data.activities.map((item, index) => { const Icon = activityIcons[item.kind]; return <div key={item.id} style={{ '--delay': `${index * 70}ms` } as React.CSSProperties}><span className={`activity-icon activity-icon--${item.kind}`}><Icon size={17} /></span><p><strong>{item.title}</strong><span>{item.detail}</span><small>{item.time}</small></p></div>; })}</div></article>
-                <article className="admin-panel admin-panel--notice"><div className="admin-panel__heading"><div><span>Ưu tiên</span><h2>Thông báo</h2></div><b>{data.notifications.filter((item) => item.unread).length}</b></div><div className="admin-notice-list">{data.notifications.map((item) => { const Icon = notificationIcons[item.kind]; return <div key={item.id} className={item.unread ? 'is-unread' : ''}><span className={`notice-icon notice-icon--${item.kind}`}><Icon size={17} /></span><p><strong>{item.title}</strong><span>{item.detail}</span><small>{item.time} trước</small></p></div>; })}</div></article>
+                <article className="admin-panel admin-panel--channel"><div className="admin-panel__heading"><div><span>Phân bổ</span><h2>Theo danh mục</h2></div></div><div className="admin-donut" style={{ background: `conic-gradient(${data.channels.map((channel, index) => `${channel.color} ${data.channels.slice(0, index).reduce((sum, item) => sum + item.value, 0)}% ${data.channels.slice(0, index + 1).reduce((sum, item) => sum + item.value, 0)}%`).join(',')})` }}><div><strong>100%</strong><span>doanh thu</span></div></div><div className="admin-legend">{data.channels.map((channel) => <div key={channel.id}><i style={{ background: channel.color }} /><span>{channel.label}</span><strong>{channel.value}%</strong></div>)}</div></article>
+                <article className="admin-panel admin-panel--activity"><div className="admin-panel__heading"><div><span>Cập nhật</span><h2>Hoạt động gần đây</h2></div><button>Xem tất cả</button></div><div className="admin-activity-list">{notifications.slice(0, 5).map((n, index) => { let kind: ActivityKind = 'payment'; if (n.originalType === 'order') kind = 'order'; else if (n.originalType === 'customer' || n.originalType === 'user') kind = 'customer'; else if (n.originalType === 'stock') kind = 'stock'; const Icon = activityIcons[kind]; return <div key={n.id} style={{ '--delay': `${index * 70}ms` } as React.CSSProperties}><span className={`activity-icon activity-icon--${kind}`}><Icon size={17} /></span><p><strong>{n.title}</strong><span>{n.detail}</span><small>{n.time}</small></p></div>; })}</div></article>
+                <article className="admin-panel admin-panel--notice"><div className="admin-panel__heading"><div><span>Ưu tiên</span><h2>Thông báo</h2></div><b>{unreadCount}</b></div><div className="admin-notice-list">{notifications.map((item) => { const Icon = notificationIcons[item.kind]; return <div key={item.id} className={item.unread ? 'is-unread' : ''} style={{ cursor: item.targetType === 'Order' ? 'pointer' : 'default' }} onClick={() => { if(item.targetType === 'Order' && item.targetId) window.location.href = `/admin/orders?id=${item.targetId}` }}><span className={`notice-icon notice-icon--${item.kind}`}><Icon size={17} /></span><p><strong>{item.title}</strong><span>{item.detail}</span><small>{item.time}</small></p></div>; })}</div></article>
               </section>
 
               <section className="admin-panel admin-products-panel"><div className="admin-panel__heading"><div><span>Hiệu suất</span><h2>Sản phẩm bán chạy</h2></div><button>Xuất báo cáo</button></div>{data.topProducts.length ? <div className="admin-table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Danh mục</th><th>Đã bán</th><th>Doanh thu</th><th>Tăng trưởng</th><th>Tồn kho</th></tr></thead><tbody>{data.topProducts.map((product) => <tr key={product.id}><td><span className="admin-product-thumb">{product.name.charAt(0)}</span><div><strong>{product.name}</strong><small>{product.id}</small></div></td><td>{product.category}</td><td>{product.sold.toLocaleString('vi-VN')}</td><td>{formatCurrency(product.revenue)}</td><td><span className={product.growth >= 0 ? 'growth-positive' : 'growth-negative'}>{product.growth >= 0 ? '+' : ''}{product.growth}%</span></td><td><span className={product.stock < 10 ? 'stock-low' : ''}>{product.stock}</span></td></tr>)}</tbody></table></div> : <div className="admin-empty"><MagnifyingGlass size={34} /><h3>Không tìm thấy sản phẩm</h3><p>Hãy thử từ khóa khác hoặc xóa nội dung tìm kiếm.</p><button onClick={() => updateFilter('query', '')}>Xóa tìm kiếm</button></div>}</section>

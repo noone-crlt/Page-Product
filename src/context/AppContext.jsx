@@ -9,7 +9,7 @@ import React, {
 import { CATEGORIES } from '../constants/productsData';
 import { getProducts } from '../services/productApi';
 import { addCartItem, deleteCartItem, getCart } from '../services/cartApi';
-import { clearAuthTokens } from '../services/authApi';
+import { clearAuthTokens, getAuthenticatedUser } from '../services/authApi';
 import { getWishlist, toggleWishlist as toggleWishlistApi } from '../services/wishlistApi';
 
 const AppContext = createContext(null);
@@ -210,7 +210,8 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     if (!localStorage.getItem('accessToken')) return;
-    setUser({ name: 'Tài khoản', email: '' });
+    const authUser = getAuthenticatedUser() || { name: 'Tài khoản', email: '' };
+    setUser(authUser);
     syncAccountData();
   }, []);
 
@@ -318,7 +319,9 @@ export const AppProvider = ({ children }) => {
 
     return result.sort((a, b) => {
       if (sortBy === 'newest') {
-        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        const timeB = b.createdAt ? new Date(b.createdAt.endsWith('Z') ? b.createdAt : b.createdAt + 'Z').getTime() : 0;
+        const timeA = a.createdAt ? new Date(a.createdAt.endsWith('Z') ? a.createdAt : a.createdAt + 'Z').getTime() : 0;
+        return timeB - timeA;
       }
       if (sortBy === 'price-asc') return a.price - b.price;
       if (sortBy === 'price-desc') return b.price - a.price;

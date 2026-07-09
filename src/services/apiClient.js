@@ -51,7 +51,11 @@ export const apiClient = async (path, options = {}) => {
   const data = await parseResponse(response);
 
   if (!response.ok) {
+    console.error('API Error Response Data:', data);
     const message =
+      (typeof data === 'string' && data.length < 200 ? data : null) ||
+      data?.detail ||
+      data?.title ||
       data?.message ||
       data?.error ||
       (response.status === 401

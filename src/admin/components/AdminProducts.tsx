@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Bell, CaretDown, CaretLeft, CaretRight, ChartLineUp, Cube, Eye, House, List, MagnifyingGlass, Megaphone, Package, Receipt, SignOut, Star, Storefront, Users, Warning, X } from '@phosphor-icons/react';
 import { getProductById, getProducts } from '../../services/productApi';
+import { useNotifications } from '../hooks/useNotifications';
 import '../styles/admin-dashboard.css';
 
 interface ApiProduct { product_id: number; name: string; thumbnail_url?: string; min_price?: number | string; max_price?: number | string; average_rating?: number | string; total_reviews?: number; is_featured?: boolean; status?: string }
@@ -11,10 +12,10 @@ interface ProductDetail { product_id: number; name: string; variants?: ProductVa
 const PAGE_SIZE = 6;
 const navigation = [
   { label: 'Tổng quan', icon: House, href: '/admin' },
-  { label: 'Đơn hàng', icon: Receipt },
+  { label: 'Đơn hàng', icon: Receipt, href: '/admin/orders' },
   { label: 'Sản phẩm', icon: Package, href: '/admin/products', active: true },
-  { label: 'Khách hàng', icon: Users },
-  { label: 'Marketing', icon: Megaphone },
+  { label: 'Khách hàng', icon: Users, href: '/admin/customers' },
+  { label: 'Marketing', icon: Megaphone, href: '/admin/marketing' },
 ];
 const formatCurrency = (value?: number | string) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Number(value || 0)).replace('₫', 'VNĐ');
 
@@ -37,6 +38,7 @@ export default function AdminProducts() {
   const [error, setError] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const { notifications, unreadCount, markAllAsRead } = useNotifications();
   const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
@@ -73,12 +75,12 @@ export default function AdminProducts() {
     <button className={`admin-sidebar-backdrop ${sidebarOpen ? 'is-visible' : ''}`} aria-label="Đóng menu" onClick={() => setSidebarOpen(false)} />
     <aside className={`admin-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
       <div className="admin-brand"><span><ChartLineUp size={23} weight="bold" /></span><strong>My Store</strong><button aria-label="Đóng menu" onClick={() => setSidebarOpen(false)}><X size={18} /></button></div>
-      <nav aria-label="Điều hướng quản trị"><small>Không gian làm việc</small>{navigation.map(({ label, icon: Icon, href, active }) => <button key={label} className={active ? 'active' : ''} onClick={() => href && (window.location.href = href)}><Icon size={19} weight={active ? 'fill' : 'regular'} /><span>{label}</span></button>)}</nav>
+      <nav aria-label="Điều hướng quản trị"><small>Không gian làm việc</small>{navigation.map(({ label, icon: Icon, href, active }, index) => <button key={label} className={active ? 'active' : ''} onClick={() => href && (window.location.href = href)}><Icon size={19} weight={active ? 'fill' : 'regular'} /><span>{label}</span>{index === 1 && <b>12</b>}</button>)}</nav>
       <div className="admin-sidebar__bottom"><a href="/"><Storefront size={19} />Xem cửa hàng</a><div className="admin-profile-mini"><span>{userInitials}</span><div><strong>{userName}</strong><small>{userRole}</small></div><SignOut size={18} onClick={logout} style={{ cursor: 'pointer' }} /></div></div>
     </aside>
 
     <main className="admin-main">
-      <header className="admin-header"><button className="admin-menu-button" aria-label="Mở menu" onClick={() => setSidebarOpen(true)}><List size={22} /></button><label className="admin-search"><MagnifyingGlass size={18} /><span className="sr-only">Tìm kiếm sản phẩm</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm sản phẩm, mã sản phẩm..." /></label><div className="admin-header__actions"><button className="admin-notification-button" aria-label="Thông báo" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((value) => !value)}><Bell size={20} /><span /></button>
+      <header className="admin-header"><button className="admin-menu-button" aria-label="Mở menu" onClick={() => setSidebarOpen(true)}><List size={22} /></button><label className="admin-search"><MagnifyingGlass size={18} /><span className="sr-only">Tìm kiếm sản phẩm</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm sản phẩm, mã sản phẩm..." /></label><div className="admin-header__actions"><button className="admin-notification-button" aria-label="Thông báo" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((value) => !value)}><Bell size={20} />{unreadCount > 0 && <span />}</button>
         <div className="admin-header-profile-wrapper">
           <button className={`admin-header-profile ${profileOpen ? 'is-active' : ''}`} onClick={() => setProfileOpen((prev) => !prev)} aria-expanded={profileOpen}>
             <span>{userInitials}</span><div><strong>{userName}</strong><small>{userRole}</small></div><CaretDown size={14} />
@@ -97,7 +99,7 @@ export default function AdminProducts() {
             </div>
           )}
         </div>
-        {notificationsOpen && <div className="admin-notification-popover"><strong>Thông báo mới</strong><p>Danh sách sản phẩm đã đồng bộ với hệ thống.<small>Vừa xong</small></p></div>}</div></header>
+        {notificationsOpen && <div className="admin-notification-popover"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><strong>Thông báo mới</strong>{unreadCount > 0 && <button onClick={markAllAsRead} style={{ fontSize: 11, color: '#1463df', border: 0, background: 'none', cursor: 'pointer' }}>Đánh dấu đã đọc</button>}</div>{notifications.map((item) => <p key={item.id} className={item.unread ? 'is-unread' : ''}>{item.title}<small>{item.time}</small></p>)}</div>}</div></header>
       <div className="admin-content admin-products-page">
         <section className="admin-page-heading"><div><span className="admin-eyebrow">Danh mục cửa hàng</span><h1>Quản lý sản phẩm</h1><p>Theo dõi thông tin, giá bán và trạng thái sản phẩm từ hệ thống.</p></div><div className="admin-products-count"><Cube size={19} /><span><small>Tổng sản phẩm</small><strong>{products.length.toLocaleString('vi-VN')}</strong></span></div></section>
         <section className="admin-product-toolbar" aria-label="Bộ lọc sản phẩm"><div><strong>Danh sách sản phẩm</strong><span>{filteredProducts.length} kết quả</span></div><label><span>Trạng thái</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">Tất cả</option><option value="active">Đang bán</option><option value="inactive">Ngừng bán</option></select></label></section>

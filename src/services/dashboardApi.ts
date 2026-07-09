@@ -29,14 +29,35 @@ export interface DashboardRevenue {
   revenue: number;
 }
 
-export const getDashboardStats = (): Promise<{ data: DashboardStats }> => {
-  return apiClient('/api/dashboard/stats');
+export const getDashboardStats = (fromDate?: string, toDate?: string): Promise<{ data: DashboardStats }> => {
+  const query = new URLSearchParams();
+  if (fromDate) query.append('fromDate', fromDate);
+  if (toDate) query.append('toDate', toDate);
+  return apiClient(`/api/dashboard/stats${query.toString() ? `?${query.toString()}` : ''}`);
 };
 
-export const getTopSelling = (): Promise<{ data: DashboardTopSelling[] }> => {
-  return apiClient('/api/dashboard/top-selling');
+export const getTopSelling = (fromDate?: string, toDate?: string): Promise<{ data: DashboardTopSelling[] }> => {
+  const query = new URLSearchParams();
+  if (fromDate) query.append('fromDate', fromDate);
+  if (toDate) query.append('toDate', toDate);
+  return apiClient(`/api/dashboard/top-selling${query.toString() ? `?${query.toString()}` : ''}`);
 };
 
-export const getRevenueLast7Days = (): Promise<{ data: DashboardRevenue[] }> => {
-  return apiClient('/api/dashboard/revenue-last-7-days');
+export const getRevenueLast7Days = (fromDate?: string, toDate?: string): Promise<{ data: DashboardRevenue[] }> => {
+  const query = new URLSearchParams();
+  if (fromDate) query.append('fromDate', fromDate);
+  if (toDate) query.append('toDate', toDate);
+  return apiClient(`/api/dashboard/revenue-last-7-days${query.toString() ? `?${query.toString()}` : ''}`);
+};
+
+export interface DashboardRevenueByCategory {
+  category_name: string;
+  total_revenue: string | number;
+}
+
+export const getRevenueByCategory = (fromDate?: string, toDate?: string): Promise<{ data: DashboardRevenueByCategory[] }> => {
+  const query = new URLSearchParams();
+  if (fromDate) query.append('fromDate', fromDate);
+  if (toDate) query.append('toDate', toDate);
+  return apiClient(`/api/dashboard/revenue-by-category${query.toString() ? `?${query.toString()}` : ''}`);
 };

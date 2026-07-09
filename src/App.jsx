@@ -5,6 +5,7 @@ import { canAccessDashboard } from './services/authApi'
 
 const AdminDashboard = lazy(() => import('./admin/components/AdminDashboard'))
 const AdminProducts = lazy(() => import('./admin/components/AdminProducts'))
+const AdminOrders = lazy(() => import('./admin/components/AdminOrders'))
 
 function App() {
   const isAdminPage = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')
@@ -27,7 +28,9 @@ function App() {
 
       const AdminPage = window.location.pathname.startsWith('/admin/products')
         ? AdminProducts
-        : AdminDashboard
+        : window.location.pathname.startsWith('/admin/orders')
+          ? AdminOrders
+          : AdminDashboard
 
       return (
         <Suspense fallback={<div className="admin-route-loading" aria-live="polite">Đang tải trang quản trị...</div>}>

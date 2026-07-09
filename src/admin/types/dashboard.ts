@@ -41,6 +41,9 @@ export interface NotificationItem {
   time: string;
   kind: NotificationKind;
   unread: boolean;
+  originalType: string;
+  targetType?: string;
+  targetId?: string;
 }
 
 export interface TopProduct {

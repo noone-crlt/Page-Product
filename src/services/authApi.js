@@ -1,7 +1,6 @@
 import { apiClient } from './apiClient';
 
 const getTokenPayload = (result) => result?.data || result || {};
-const ADMIN_EMAIL = 'user@gmail.com';
 
 const decodeJwtPayload = (token) => {
   try {
@@ -27,19 +26,36 @@ const getEmailClaim = (payload) =>
   payload?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
   '';
 
-export const getAuthenticatedUserEmail = () => {
+const getNameClaim = (payload) =>
+  payload?.name ||
+  payload?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+  '';
+
+const getRoleClaim = (payload) =>
+  payload?.role ||
+  payload?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
+  '';
+
+export const getAuthenticatedUser = () => {
   const token = localStorage.getItem('accessToken');
-  if (!token) return '';
+  if (!token) return null;
 
   const payload = decodeJwtPayload(token);
-  if (!payload) return '';
-  if (payload.exp && payload.exp * 1000 <= Date.now()) return '';
+  if (!payload) return null;
+  if (payload.exp && payload.exp * 1000 <= Date.now()) return null;
 
-  return String(getEmailClaim(payload)).trim().toLocaleLowerCase('en-US');
+  const email = String(getEmailClaim(payload)).trim().toLocaleLowerCase('en-US');
+  const name = String(getNameClaim(payload)).trim();
+  const role = String(getRoleClaim(payload)).trim();
+  const isAdmin = role === '2' || role.toLowerCase() === 'admin';
+
+  return { email, name, role, isAdmin };
 };
 
-export const canAccessDashboard = () =>
-  getAuthenticatedUserEmail() === ADMIN_EMAIL;
+export const canAccessDashboard = () => {
+  const user = getAuthenticatedUser();
+  return user?.isAdmin === true;
+};
 
 const saveTokens = (result) => {
   const payload = getTokenPayload(result);
