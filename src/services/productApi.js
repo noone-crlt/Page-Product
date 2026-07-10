@@ -16,6 +16,17 @@ export const getProducts = (params = {}) => {
 export const getProductById = (productId) =>
   apiClient(`/api/products/${encodeURIComponent(productId)}`);
 
+export const updateProduct = (productId, product) =>
+  apiClient(`/api/products/${encodeURIComponent(productId)}`, {
+    method: 'PUT',
+    body: JSON.stringify(product),
+  });
+
+export const deleteProduct = (productId) =>
+  apiClient(`/api/products/${encodeURIComponent(productId)}`, {
+    method: 'DELETE',
+  });
+
 export const getProductReviews = (productId) =>
   apiClient(`/api/products/${encodeURIComponent(productId)}/reviews`);
 
