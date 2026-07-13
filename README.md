@@ -47,7 +47,7 @@ npm install
 npm run dev
 ```
 
-Ứng dụng sẽ chạy tại địa chỉ: `http://localhost:5173` (mặc định của Vite).
+Ứng dụng sẽ chạy tại địa chỉ: `http://localhost:5174` (mặc định của Vite).
 
 ### 3. Build cho Production
 
