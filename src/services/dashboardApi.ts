@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import { apiClient, API_BASE_URL } from './apiClient';
 
 export interface DashboardStats {
   total_new_customers: number;
@@ -60,4 +60,27 @@ export const getRevenueByCategory = (fromDate?: string, toDate?: string): Promis
   if (fromDate) query.append('fromDate', fromDate);
   if (toDate) query.append('toDate', toDate);
   return apiClient(`/api/dashboard/revenue-by-category${query.toString() ? `?${query.toString()}` : ''}`);
+};
+
+export const exportTopSelling = async (fromDate?: string, toDate?: string): Promise<Blob> => {
+  const query = new URLSearchParams();
+  if (fromDate) query.append('fromDate', fromDate);
+  if (toDate) query.append('toDate', toDate);
+
+  const accessToken = localStorage.getItem('accessToken');
+  const headers = new Headers();
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/dashboard/top-selling/export${query.toString() ? `?${query.toString()}` : ''}`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error('Export failed');
+  }
+
+  return response.blob();
 };

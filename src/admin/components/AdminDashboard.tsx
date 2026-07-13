@@ -42,7 +42,7 @@ import {
   Target,
 } from '@phosphor-icons/react';
 import { formatCurrency, formatMetric, getFilteredDashboardData } from '../data/dashboardData';
-import { getDashboardStats, getTopSelling, getRevenueLast7Days, getRevenueByCategory } from '../../services/dashboardApi';
+import { getDashboardStats, getTopSelling, getRevenueLast7Days, getRevenueByCategory, exportTopSelling } from '../../services/dashboardApi';
 import { apiClient } from '../../services/apiClient';
 import type {
   ActivityKind,
@@ -128,6 +128,29 @@ export default function AdminDashboard() {
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null]>([dayjs().subtract(7, 'day'), dayjs()]);
   const [data, setData] = useState(() => getFilteredDashboardData(filters));
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportTopSelling = async () => {
+    try {
+      setExporting(true);
+      const fromDateStr = dateRange[0] ? dateRange[0].toISOString() : undefined;
+      const toDateStr = dateRange[1] ? dateRange[1].toISOString() : undefined;
+      const blob = await exportTopSelling(fromDateStr, toDateStr);
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `top-selling-report-${dayjs().format('YYYYMMDDHHmmss')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Có lỗi xảy ra khi xuất báo cáo!');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -396,7 +419,7 @@ export default function AdminDashboard() {
                 </article>
               </section>
 
-              <section className="admin-panel admin-products-panel"><div className="admin-panel__heading"><div><span>Hiệu suất</span><h2>Sản phẩm bán chạy</h2></div><button>Xuất báo cáo</button></div>{data.topProducts.length ? <div className="admin-table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Danh mục</th><th>Đã bán</th><th>Doanh thu</th><th>Tăng trưởng</th><th>Tồn kho</th></tr></thead><tbody>{data.topProducts.map((product) => <tr key={product.id}><td>{product.image ? <img src={product.image} alt={product.name} className="admin-product-thumb" style={{ objectFit: 'cover' }} /> : <span className="admin-product-thumb">{product.name.charAt(0)}</span>}<div><strong>{product.name}</strong><small>{product.id}</small></div></td><td>{product.category}</td><td>{product.sold.toLocaleString('vi-VN')}</td><td>{formatCurrency(product.revenue)}</td><td><span className={product.growth >= 0 ? 'growth-positive' : 'growth-negative'}>{product.growth >= 0 ? '+' : ''}{product.growth}%</span></td><td><span className={product.stock < 10 ? 'stock-low' : ''}>{product.stock}</span></td></tr>)}</tbody></table></div> : <div className="admin-empty"><MagnifyingGlass size={34} /><h3>Không tìm thấy sản phẩm</h3><p>Hãy thử từ khóa khác hoặc xóa nội dung tìm kiếm.</p><button onClick={() => updateFilter('query', '')}>Xóa tìm kiếm</button></div>}</section>
+              <section className="admin-panel admin-products-panel"><div className="admin-panel__heading"><div><span>Hiệu suất</span><h2>Sản phẩm bán chạy</h2></div><button onClick={handleExportTopSelling} disabled={exporting}>{exporting ? 'Đang xuất...' : 'Xuất báo cáo'}</button></div>{data.topProducts.length ? <div className="admin-table-wrap"><table><thead><tr><th>Sản phẩm</th><th>Danh mục</th><th>Đã bán</th><th>Doanh thu</th><th>Tăng trưởng</th><th>Tồn kho</th></tr></thead><tbody>{data.topProducts.map((product) => <tr key={product.id}><td>{product.image ? <img src={product.image} alt={product.name} className="admin-product-thumb" style={{ objectFit: 'cover' }} /> : <span className="admin-product-thumb">{product.name.charAt(0)}</span>}<div><strong>{product.name}</strong><small>{product.id}</small></div></td><td>{product.category}</td><td>{product.sold.toLocaleString('vi-VN')}</td><td>{formatCurrency(product.revenue)}</td><td><span className={product.growth >= 0 ? 'growth-positive' : 'growth-negative'}>{product.growth >= 0 ? '+' : ''}{product.growth}%</span></td><td><span className={product.stock < 10 ? 'stock-low' : ''}>{product.stock}</span></td></tr>)}</tbody></table></div> : <div className="admin-empty"><MagnifyingGlass size={34} /><h3>Không tìm thấy sản phẩm</h3><p>Hãy thử từ khóa khác hoặc xóa nội dung tìm kiếm.</p><button onClick={() => updateFilter('query', '')}>Xóa tìm kiếm</button></div>}</section>
             </>
           )}
         </div>

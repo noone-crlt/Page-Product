@@ -7,6 +7,7 @@ import ChatBubble from './components/chat/ChatBubble'
 const AdminDashboard = lazy(() => import('./admin/components/AdminDashboard'))
 const AdminProducts = lazy(() => import('./admin/components/AdminProducts'))
 const AdminOrders = lazy(() => import('./admin/components/AdminOrders'))
+const AdminCustomers = lazy(() => import('./admin/components/AdminCustomers'))
 
 function App() {
   const isAdminPage = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')
@@ -31,7 +32,9 @@ function App() {
         ? AdminProducts
         : window.location.pathname.startsWith('/admin/orders')
           ? AdminOrders
-          : AdminDashboard
+          : window.location.pathname.startsWith('/admin/customers')
+            ? AdminCustomers
+            : AdminDashboard
 
       return (
         <Suspense fallback={<div className="admin-route-loading" aria-live="polite">Đang tải trang quản trị...</div>}>
