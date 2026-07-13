@@ -1,0 +1,343 @@
+.coverflow-container {
+  position: relative;
+  width: 100%;
+  height: 100vh; /* Full viewport height */
+  overflow: hidden;
+  transition: background-color 650ms cubic-bezier(0.4, 0, 0.2, 1), color 650ms cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+}
+
+/* Grain Overlay */
+.coverflow-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.2;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  background-repeat: repeat;
+}
+
+/* Giant Ghost Text */
+.coverflow-ghost-text {
+  position: absolute;
+  top: 15%;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+  font-family: 'Anton', sans-serif;
+  font-size: clamp(90px, 25vw, 380px);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  opacity: 0.08; /* Very subtle */
+  animation: fadeSlideUp 650ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeSlideUp {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 0.08; transform: translateY(0); }
+}
+
+/* Brand Label */
+.coverflow-brand {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  z-index: 60;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  opacity: 0.9;
+}
+
+@media (min-width: 640px) {
+  .coverflow-brand {
+    left: 2.5rem;
+    top: 2rem;
+  }
+}
+
+/* Main Layout */
+.coverflow-layout {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+@media (min-width: 1024px) {
+  .coverflow-layout {
+    flex-direction: row;
+    align-items: center;
+    padding: 4rem;
+  }
+}
+
+/* Left Side: Info */
+.coverflow-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 4rem;
+  z-index: 20;
+}
+
+@media (min-width: 1024px) {
+  .coverflow-info {
+    padding-top: 0;
+    max-width: 400px;
+  }
+}
+
+.coverflow-info-content {
+  margin-bottom: 3rem;
+  animation: fadeIn 650ms ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.coverflow-brand-tag {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.coverflow-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  letter-spacing: -0.03em;
+}
+
+.coverflow-desc {
+  font-size: 1rem;
+  line-height: 1.6;
+  opacity: 0.8;
+  margin-bottom: 1.5rem;
+}
+
+.coverflow-price {
+  font-size: 1.75rem;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 2rem;
+}
+
+.coverflow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem;
+  background-color: currentColor;
+  border-radius: 9999px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Trick to invert text color based on background using mix-blend-mode or explicit color in inline style */
+.coverflow-container {
+  /* Set button colors via CSS variable or inherit */
+}
+.coverflow-btn {
+  background: var(--ink, #111827);
+  color: white;
+}
+.coverflow-container[style*="background-color: #0F172A"] .coverflow-btn,
+.coverflow-container[style*="background-color: rgb(15, 23, 42)"] .coverflow-btn,
+.coverflow-container[style*="background-color: #18181B"] .coverflow-btn,
+.coverflow-container[style*="background-color: rgb(24, 24, 27)"] .coverflow-btn {
+  background: white;
+  color: #111827;
+}
+
+.coverflow-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Navigation */
+.coverflow-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.coverflow-nav button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.coverflow-nav button:hover:not(:disabled) {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.coverflow-nav button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.coverflow-indicators {
+  display: flex;
+  gap: 8px;
+}
+
+.coverflow-indicators span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+  opacity: 0.3;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.coverflow-indicators span.active {
+  opacity: 1;
+  transform: scale(1.3);
+}
+
+/* Right Side: Carousel */
+.coverflow-gallery {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  margin-top: -2rem; /* Mobile adjustment */
+}
+
+@media (min-width: 1024px) {
+  .coverflow-gallery {
+    margin-top: 0;
+  }
+}
+
+.coverflow-item {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  transition: transform 650ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 650ms cubic-bezier(0.4, 0, 0.2, 1),
+              filter 650ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity, filter;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+@media (min-width: 1024px) {
+  .coverflow-item {
+    width: 320px;
+    height: 320px;
+  }
+}
+
+.coverflow-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 25px 35px rgba(0,0,0,0.2));
+}
+
+/* 3D Positioning States */
+
+/* Center Item */
+.coverflow-item.is-center {
+  transform: translateX(0) scale(1.25);
+  opacity: 1;
+  filter: blur(0px);
+  z-index: 30;
+  cursor: default;
+}
+
+@media (min-width: 1024px) {
+  .coverflow-item.is-center {
+    transform: translateX(0) scale(1.68);
+  }
+}
+
+/* Left Item */
+.coverflow-item.is-left {
+  transform: translateX(-45%) scale(0.85);
+  opacity: 0.6;
+  filter: blur(2px);
+  z-index: 20;
+}
+
+@media (min-width: 1024px) {
+  .coverflow-item.is-left {
+    transform: translateX(-55%) scale(0.9);
+  }
+}
+
+.coverflow-item.is-left:hover {
+  opacity: 0.8;
+}
+
+/* Right Item */
+.coverflow-item.is-right {
+  transform: translateX(45%) scale(0.85);
+  opacity: 0.6;
+  filter: blur(2px);
+  z-index: 20;
+}
+
+@media (min-width: 1024px) {
+  .coverflow-item.is-right {
+    transform: translateX(55%) scale(0.9);
+  }
+}
+
+.coverflow-item.is-right:hover {
+  opacity: 0.8;
+}
+
+/* Back Item (Hidden) */
+.coverflow-item.is-back {
+  transform: translateX(0) scale(0.5);
+  opacity: 0;
+  filter: blur(10px);
+  z-index: 10;
+  pointer-events: none;
+}
