@@ -11,6 +11,7 @@ import { getProducts } from '../services/productApi';
 import { addCartItem, deleteCartItem, getCart } from '../services/cartApi';
 import { clearAuthTokens, getAuthenticatedUser } from '../services/authApi';
 import { getWishlist, toggleWishlist as toggleWishlistApi } from '../services/wishlistApi';
+import { getProfile } from '../services/profileApi';
 
 const AppContext = createContext(null);
 const CART_KEY = 'my_store_cart';
@@ -212,6 +213,21 @@ export const AppProvider = ({ children }) => {
     if (!localStorage.getItem('accessToken')) return;
     const authUser = getAuthenticatedUser() || { name: 'Tài khoản', email: '' };
     setUser(authUser);
+    getProfile()
+      .then((result) => {
+        const profile = result?.data?.profile ?? result?.data ?? result;
+        if (!profile) return;
+        setUser((current) => ({
+          ...current,
+          name: profile.full_name || profile.name || current?.name || 'Tài khoản',
+          email: profile.email || current?.email || '',
+          phone: profile.phone_number || profile.phone || '',
+          avatarUrl: profile.avatar_url || profile.avatarUrl || '',
+        }));
+      })
+      .catch(() => {
+        // Giữ thông tin từ token nếu API hồ sơ tạm thời không phản hồi.
+      });
     syncAccountData();
   }, []);
 
@@ -372,6 +388,10 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const updateCurrentUser = (profile) => {
+    setUser((current) => ({ ...current, ...profile }));
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -417,6 +437,7 @@ export const AppProvider = ({ children }) => {
         setIsAuthOpen,
         login,
         logout,
+        updateCurrentUser,
       }}
     >
       {children}

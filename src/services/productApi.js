@@ -17,10 +17,10 @@ export const getProductById = (productId) =>
   apiClient(`/api/products/${encodeURIComponent(productId)}`);
 
 export const getProductCategories = () =>
-  apiClient('/api/Categories?page=1&limit=100');
+  apiClient('/api/categories?page=1&limit=100');
 
 export const getProductBrands = () =>
-  apiClient('/api/Brands?page=1&limit=100');
+  apiClient('/api/brands?page=1&limit=100');
 
 export const createProduct = (product) =>
   apiClient('/api/products', {
@@ -32,7 +32,7 @@ export const uploadProductThumbnail = (file) => {
   const body = new FormData();
   body.append('file', file);
 
-  return apiClient('/api/products/image', {
+  return apiClient('/api/image', {
     method: 'POST',
     body,
   });

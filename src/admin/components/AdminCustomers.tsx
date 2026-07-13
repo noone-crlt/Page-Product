@@ -10,12 +10,15 @@ import {
   FunnelSimple,
   House,
   List,
+  LockSimple,
+  LockSimpleOpen,
   MagnifyingGlass,
   SignOut,
   Star,
   Users,
   X,
 } from '@phosphor-icons/react';
+import { activateCustomer, deactivateCustomer, getCustomerById, getCustomers } from '../../services/customerApi';
 import { useNotifications } from '../hooks/useNotifications';
 import '../styles/admin-dashboard.css';
 import { AdminSidebar } from './AdminSidebar';
@@ -29,6 +32,8 @@ interface CustomerReview {
   date: string;
 }
 
+type CustomerStatus = 'active' | 'inactive';
+
 interface Customer {
   id: string;
   name: string;
@@ -37,84 +42,40 @@ interface Customer {
   totalSpent: number;
   totalOrders: number;
   joinDate: string;
-  status: 'active' | 'vip' | 'warning' | 'inactive';
+  status: CustomerStatus;
   reviews: CustomerReview[];
 }
 
-/* ─── Mock Data ─── */
-const CUSTOMERS: Customer[] = [
-  {
-    id: 'KH-001', name: 'Đoàn Hữu Tuấn', email: 'tuan.doan@gmail.com', phone: '0912 847 193',
-    totalSpent: 32_450_000, totalOrders: 7, joinDate: '2023-05-12', status: 'vip',
-    reviews: [
-      { id: 'r1', product: 'iPhone 15 Pro Max 256GB', rating: 5, text: 'Máy rất mượt, giao hàng siêu nhanh. Đóng gói cẩn thận 10 điểm!', date: '2024-11-20' },
-      { id: 'r2', product: 'Tai nghe AirPods Pro 2', rating: 4, text: 'Âm thanh tốt nhưng hộp hơi xước nhẹ lúc mới nhận.', date: '2024-08-15' },
-    ],
-  },
-  {
-    id: 'KH-002', name: 'Lê Yến Nhi', email: 'yennhi.le@outlook.com', phone: '0387 641 028',
-    totalSpent: 4_500_000, totalOrders: 2, joinDate: '2024-01-08', status: 'warning',
-    reviews: [
-      { id: 'r3', product: 'Sạc nhanh 20W Apple', rating: 2, text: 'Sạc khá nóng, cắm thỉnh thoảng bị lỏng. Yêu cầu shop hỗ trợ đổi trả.', date: '2024-12-05' },
-    ],
-  },
-  {
-    id: 'KH-003', name: 'Trần Minh Khang', email: 'khang.tm@yahoo.com', phone: '0906 312 847',
-    totalSpent: 850_000, totalOrders: 1, joinDate: '2025-01-15', status: 'active',
-    reviews: [
-      { id: 'r4', product: 'Ốp lưng iPhone 15 Pro', rating: 5, text: 'Ốp cầm rất sướng tay, màu đẹp giống hình.', date: '2025-01-20' },
-    ],
-  },
-  {
-    id: 'KH-004', name: 'Nguyễn Bích Ngọc', email: 'bichngoc.nguyen@gmail.com', phone: '0935 182 746',
-    totalSpent: 58_900_000, totalOrders: 14, joinDate: '2022-11-05', status: 'vip',
-    reviews: [
-      { id: 'r5', product: 'MacBook Air M2 8GB 256GB', rating: 5, text: 'Máy mỏng nhẹ, pin cực trâu. Làm việc nguyên ngày không cần sạc.', date: '2025-02-10' },
-      { id: 'r6', product: 'Magic Mouse 2', rating: 4, text: 'Dùng quen thì rất thích, thiết kế đẹp. Chỉ sạc hơi bất tiện.', date: '2024-06-12' },
-    ],
-  },
-  {
-    id: 'KH-005', name: 'Phạm Quốc Bảo', email: 'quocbao.p@gmail.com', phone: '0978 543 210',
-    totalSpent: 15_200_000, totalOrders: 4, joinDate: '2024-03-22', status: 'active',
-    reviews: [
-      { id: 'r7', product: 'Samsung Galaxy S24 Ultra', rating: 5, text: 'Màn hình quá đẹp, camera zoom 100x chụp tầm xa rõ nét. Rất hài lòng!', date: '2025-04-18' },
-    ],
-  },
-  {
-    id: 'KH-006', name: 'Hoàng Khánh Linh', email: 'khanhlinh.h@proton.me', phone: '0362 918 475',
-    totalSpent: 1_290_000, totalOrders: 1, joinDate: '2025-05-10', status: 'inactive',
-    reviews: [],
-  },
-  {
-    id: 'KH-007', name: 'Vũ Thanh Hà', email: 'thanha.vu@gmail.com', phone: '0854 273 691',
-    totalSpent: 22_100_000, totalOrders: 6, joinDate: '2023-09-14', status: 'vip',
-    reviews: [
-      { id: 'r8', product: 'iPad Pro M4 11 inch', rating: 5, text: 'Mỏng kinh ngạc, vẽ bằng Apple Pencil Pro mượt không tưởng.', date: '2025-06-02' },
-      { id: 'r9', product: 'Apple Pencil Pro', rating: 3, text: 'Đôi lúc mất kết nối Bluetooth, phải tháo gắn lại. Mong Apple sửa.', date: '2025-06-08' },
-    ],
-  },
-  {
-    id: 'KH-008', name: 'Mai Thảo Vy', email: 'thaovy.mai@gmail.com', phone: '0916 738 204',
-    totalSpent: 6_750_000, totalOrders: 3, joinDate: '2024-07-01', status: 'active',
-    reviews: [
-      { id: 'r10', product: 'Loa JBL Charge 5', rating: 1, text: 'Mới dùng 2 tuần đã hư loa bass. Đã gửi bảo hành nhưng chờ rất lâu.', date: '2025-03-15' },
-    ],
-  },
-];
+const mapReviews = (reviews: unknown): CustomerReview[] =>
+  Array.isArray(reviews) ? reviews.map((review: any, index) => ({
+    id: String(review.review_id ?? review.id ?? index),
+    product: review.product_name ?? review.product?.name ?? 'Sản phẩm',
+    rating: Number(review.rating_stars ?? review.rating ?? 0),
+    text: review.comment ?? review.text ?? '',
+    date: review.created_at ?? review.date ?? '',
+  })) : [];
 
-const statusMap: Record<string, { label: string; color: string }> = {
-  vip: { label: 'VIP', color: 'green' },
+const mapCustomer = (customer: any): Customer => ({
+  id: String(customer.user_id ?? customer.id ?? ''),
+  name: customer.full_name ?? customer.name ?? 'Khách hàng',
+  email: customer.email ?? 'Chưa có email',
+  phone: customer.phone_number ?? customer.phone ?? 'Chưa cập nhật',
+  totalSpent: Number(customer.total_spent ?? customer.totalSpent ?? 0),
+  totalOrders: Number(customer.total_orders ?? customer.totalOrders ?? 0),
+  joinDate: customer.created_at ?? customer.join_date ?? customer.joinDate ?? '',
+  status: customer.is_active === false || customer.status === 'inactive' ? 'inactive' : 'active',
+  reviews: mapReviews(customer.reviews),
+});
+
+const statusMap: Record<CustomerStatus, { label: string; color: string }> = {
   active: { label: 'Hoạt động', color: 'blue' },
-  warning: { label: 'Cần chú ý', color: 'orange' },
-  inactive: { label: 'Không hoạt động', color: 'gray' },
+  inactive: { label: 'Đã khóa', color: 'gray' },
 };
 
 const statusOptions = [
   { value: 'all', label: 'Tất cả' },
-  { value: 'vip', label: 'VIP' },
   { value: 'active', label: 'Hoạt động' },
-  { value: 'warning', label: 'Cần chú ý' },
-  { value: 'inactive', label: 'Không hoạt động' },
+  { value: 'inactive', label: 'Đã khóa' },
 ];
 
 type SortMode = 'newest' | 'most-spent' | 'most-reviews';
@@ -157,24 +118,84 @@ export default function AdminCustomers() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [updatingCustomerId, setUpdatingCustomerId] = useState<string | null>(null);
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
+
+  const loadCustomers = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await getCustomers();
+      const data = Array.isArray(result?.data)
+        ? result.data
+        : Array.isArray(result?.data?.items)
+          ? result.data.items
+          : Array.isArray(result)
+            ? result
+            : [];
+      setCustomers(data.map(mapCustomer));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Không thể tải danh sách khách hàng.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadCustomers(); }, []);
+
+  const openCustomerDetail = async (customer: Customer) => {
+    setSelectedId(customer.id);
+    setSelectedCustomer(customer);
+    setDetailLoading(true);
+    setError('');
+    try {
+      const result = await getCustomerById(customer.id);
+      const detail = result?.data?.customer ?? result?.data ?? result;
+      if (detail) setSelectedCustomer(mapCustomer({ ...customer, ...detail }));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Không thể tải chi tiết khách hàng.');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const changeCustomerStatus = async (customer: Customer) => {
+    setUpdatingCustomerId(customer.id);
+    setError('');
+    const nextStatus: CustomerStatus = customer.status === 'active' ? 'inactive' : 'active';
+    try {
+      if (nextStatus === 'active') await activateCustomer(customer.id);
+      else await deactivateCustomer(customer.id);
+      setCustomers((current) => current.map((item) => item.id === customer.id ? { ...item, status: nextStatus } : item));
+      setSelectedCustomer((current) => current?.id === customer.id ? { ...current, status: nextStatus } : current);
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : 'Không thể cập nhật trạng thái khách hàng.');
+    } finally {
+      setUpdatingCustomerId(null);
+    }
+  };
 
   /* ─── Summary cards ─── */
   const summary = useMemo(() => {
-    const total = CUSTOMERS.length;
-    const vipCount = CUSTOMERS.filter(c => c.status === 'vip').length;
-    const totalReviews = CUSTOMERS.reduce((sum, c) => sum + c.reviews.length, 0);
+    const total = customers.length;
+    const activeCount = customers.filter(c => c.status === 'active').length;
+    const inactiveCount = customers.filter(c => c.status === 'inactive').length;
     return [
       { label: 'Tổng khách hàng', value: total.toLocaleString('vi-VN'), icon: Users, tone: 'blue' },
-      { label: 'Khách VIP', value: vipCount.toLocaleString('vi-VN'), icon: Star, tone: 'green' },
-      { label: 'Tổng đánh giá', value: totalReviews.toLocaleString('vi-VN'), icon: ChatCircleDots, tone: 'amber' },
+      { label: 'Đang hoạt động', value: activeCount.toLocaleString('vi-VN'), icon: LockSimpleOpen, tone: 'green' },
+      { label: 'Đã khóa', value: inactiveCount.toLocaleString('vi-VN'), icon: LockSimple, tone: 'amber' },
     ];
-  }, []);
+  }, [customers]);
 
   /* ─── Filter + Sort ─── */
   const filteredCustomers = useMemo(() => {
     const q = query.trim().toLocaleLowerCase('vi');
-    const result = CUSTOMERS.filter(c =>
+    const result = customers.filter(c =>
       (!q || c.name.toLocaleLowerCase('vi').includes(q) || c.email.toLocaleLowerCase('vi').includes(q) || c.id.toLocaleLowerCase('vi').includes(q)) &&
       (statusFilter === 'all' || c.status === statusFilter)
     );
@@ -183,7 +204,7 @@ export default function AdminCustomers() {
       if (sortMode === 'most-reviews') return b.reviews.length - a.reviews.length;
       return new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime();
     });
-  }, [query, statusFilter, sortMode]);
+  }, [customers, query, statusFilter, sortMode]);
 
   const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / PAGE_SIZE));
   const visibleCustomers = filteredCustomers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -192,8 +213,6 @@ export default function AdminCustomers() {
 
   useEffect(() => { setPage(1); }, [query, statusFilter, sortMode]);
   useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
-
-  const selectedCustomer = selectedId ? CUSTOMERS.find(c => c.id === selectedId) : null;
 
   return (
     <div className="admin-shell">
@@ -261,6 +280,7 @@ export default function AdminCustomers() {
 
           {/* Table */}
           <section className="admin-orders-panel">
+            {error && <p className="admin-form-error admin-customers-error" role="alert">{error}</p>}
             <div className="admin-table-wrap admin-orders-table">
               <table>
                 <thead>
@@ -275,7 +295,8 @@ export default function AdminCustomers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleCustomers.map((customer, index) => {
+                  {loading && Array.from({ length: PAGE_SIZE }, (_, index) => <tr key={index}><td colSpan={7}><span className="admin-customer-loading-row" /></td></tr>)}
+                  {!loading && visibleCustomers.map((customer, index) => {
                     const config = statusMap[customer.status] || { label: customer.status, color: 'gray' };
                     return (
                       <tr key={customer.id} style={{ '--delay': `${index * 45}ms` } as CSSProperties}>
@@ -294,18 +315,22 @@ export default function AdminCustomers() {
                         </td>
                         <td><span className={`admin-badge admin-badge--${config.color}`}>{config.label}</span></td>
                         <td style={{ textAlign: 'right' }}>
-                          <button className="admin-table-action" aria-label="Xem chi tiết" onClick={() => setSelectedId(customer.id)}><Eye size={18} /></button>
+                          <span className="admin-customer-actions">
+                            <button className="admin-table-action" aria-label="Xem chi tiết" onClick={() => openCustomerDetail(customer)}><Eye size={18} /></button>
+                            <button className={`admin-table-action admin-customer-status-action ${customer.status === 'active' ? 'is-lock' : 'is-unlock'}`} aria-label={customer.status === 'active' ? `Khóa ${customer.name}` : `Mở khóa ${customer.name}`} disabled={updatingCustomerId === customer.id} onClick={() => changeCustomerStatus(customer)}>{customer.status === 'active' ? <LockSimple size={17} /> : <LockSimpleOpen size={17} />}</button>
+                          </span>
                         </td>
                       </tr>
                     );
                   })}
-                  {visibleCustomers.length === 0 && (
+                  {!loading && visibleCustomers.length === 0 && (
                     <tr>
                       <td colSpan={7}>
                         <div className="admin-orders-empty">
                           <Users size={42} weight="thin" />
                           <strong>Không tìm thấy khách hàng</strong>
-                          <p>Hãy thử đổi trạng thái, từ khóa hoặc cách sắp xếp để xem thêm kết quả.</p>
+                          <p>{error ? 'Không thể tải dữ liệu từ hệ thống.' : 'Hãy thử đổi trạng thái, từ khóa hoặc cách sắp xếp để xem thêm kết quả.'}</p>
+                          {error && <button onClick={loadCustomers}>Thử lại</button>}
                         </div>
                       </td>
                     </tr>
@@ -331,11 +356,12 @@ export default function AdminCustomers() {
           <header className="admin-drawer__header">
             <h2>Hồ sơ khách hàng</h2>
             <div>
+              {selectedCustomer && <button className={`admin-customer-drawer-status ${selectedCustomer.status === 'active' ? 'is-lock' : 'is-unlock'}`} disabled={updatingCustomerId === selectedCustomer.id} onClick={() => changeCustomerStatus(selectedCustomer)}>{selectedCustomer.status === 'active' ? <><LockSimple size={16} />Khóa tài khoản</> : <><LockSimpleOpen size={16} />Mở khóa tài khoản</>}</button>}
               <button className="admin-drawer__close" onClick={() => setSelectedId(null)}><X size={20} /></button>
             </div>
           </header>
 
-          {selectedCustomer && (
+          {detailLoading ? <div className="admin-state"><span className="admin-customer-loading-row" /><p>Đang tải thông tin khách hàng...</p></div> : selectedCustomer && (
             <div className="admin-drawer__body">
               {/* Profile header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
@@ -343,6 +369,7 @@ export default function AdminCustomers() {
                 <div style={{ display: 'grid', gap: 4 }}>
                   <strong style={{ fontSize: 18, letterSpacing: '-0.03em' }}>{selectedCustomer.name}</strong>
                   <small style={{ color: '#70798b', fontSize: 11 }}>{selectedCustomer.email}</small>
+                  <span className={`admin-badge admin-badge--${statusMap[selectedCustomer.status].color}`} style={{ width: 'fit-content' }}>{statusMap[selectedCustomer.status].label}</span>
                 </div>
               </div>
 

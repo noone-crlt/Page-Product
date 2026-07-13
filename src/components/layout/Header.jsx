@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { CATEGORIES } from '../../constants/productsData';
 import { canAccessDashboard } from '../../services/authApi';
+import ProfileModal from '../profile/ProfileModal';
 
 const formatPrice = (value) =>
   new Intl.NumberFormat('vi-VN', {
@@ -31,6 +32,7 @@ export default function Header() {
   } = useApp();
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const accountRef = useRef(null);
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -156,7 +158,9 @@ export default function Header() {
                 aria-haspopup="menu"
               >
                 <span className="account-avatar">
-                  {user.name.charAt(0).toUpperCase()}
+                  {user.avatarUrl
+                    ? <img src={user.avatarUrl} alt="" />
+                    : user.name.charAt(0).toUpperCase()}
                 </span>
                 <span className="account-copy">
                   <small>Tài khoản</small>
@@ -226,6 +230,18 @@ export default function Header() {
                     )}
                   </div>
 
+                  <button
+                    className="account-profile-edit"
+                    onClick={() => {
+                      setIsAccountOpen(false);
+                      setIsProfileOpen(true);
+                    }}
+                    role="menuitem"
+                  >
+                    <span><i className="ri-user-settings-line" />Chỉnh sửa hồ sơ</span>
+                    <i className="ri-arrow-right-s-line" />
+                  </button>
+
                   <div className="account-menu-footer">
                     <span>{user.email || 'Tài khoản My Store'}</span>
                     {hasDashboardAccess && (
@@ -250,6 +266,7 @@ export default function Header() {
           )}
         </div>
       </div>
+      <ProfileModal open={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </header>
   );
 }
