@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react'
 import { AppProvider } from './context/AppContext'
 import ProductsPage from './pages/ProductsPage'
 import { canAccessDashboard } from './services/authApi'
+import ChatBubble from './components/chat/ChatBubble'
 
 const AdminDashboard = lazy(() => import('./admin/components/AdminDashboard'))
 const AdminProducts = lazy(() => import('./admin/components/AdminProducts'))
@@ -49,8 +50,10 @@ function App() {
   return (
     <AppProvider>
       {renderContent()}
+      {!isAdminPage && <ChatBubble />}
     </AppProvider>
   )
 }
+
 
 export default App
