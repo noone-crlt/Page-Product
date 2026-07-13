@@ -12,7 +12,9 @@ import {
   FilePdf,
   FunnelSimple,
   House,
+  Kanban,
   List,
+  ListDashes,
   MagnifyingGlass,
   Megaphone,
   Money,
@@ -252,13 +254,24 @@ export default function AdminOrders() {
 
   const filteredOrders = useMemo(() => {
     const value = query.trim().toLocaleLowerCase('vi');
-    const result = orders.filter((order) =>
-      (!value ||
+    const result = orders.filter((order) => {
+      const matchSearch = !value ||
         order.customer_name.toLocaleLowerCase('vi').includes(value) ||
-        order.order_code.toLocaleLowerCase('vi').includes(value)
-      ) &&
-      (statusFilter === 'all' || order.status === statusFilter)
-    );
+        order.order_code.toLocaleLowerCase('vi').includes(value);
+
+      if (!matchSearch) return false;
+      if (statusFilter === 'all') return true;
+
+      const statusGroup = [
+        { id: 'Pending', statuses: ['Pending', 'Chờ xác nhận'] },
+        { id: 'Processing', statuses: ['Processing', 'Đang xử lý'] },
+        { id: 'Shipped', statuses: ['Shipped', 'Shipping', 'Đang giao'] },
+        { id: 'Delivered', statuses: ['Delivered', 'Success', 'Hoàn thành'] },
+        { id: 'Cancelled', statuses: ['Cancelled', 'Canceled', 'Đã hủy'] }
+      ].find(g => g.id === statusFilter);
+
+      return statusGroup ? statusGroup.statuses.includes(order.status) : order.status === statusFilter;
+    });
 
     return [...result].sort((a, b) => {
       if (sortMode === 'highest') return b.total_amount - a.total_amount;
@@ -276,6 +289,8 @@ export default function AdminOrders() {
 
   useEffect(() => { setPage(1); }, [query, statusFilter, sortMode]);
   useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+
+
 
   return <div className="admin-shell">
     <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
@@ -306,7 +321,9 @@ export default function AdminOrders() {
             <h1>Đơn hàng</h1>
             <p>Kiểm tra, theo dõi và cập nhật trạng thái đơn hàng trong cùng một màn hình.</p>
           </div>
-          <button className="admin-button-primary"><FilePdf size={18} />Xuất báo cáo</button>
+          <div className="admin-orders-heading-actions">
+            <button className="admin-button-primary"><FilePdf size={18} />Xuất báo cáo</button>
+          </div>
         </section>
 
         <section className="admin-order-summary" aria-label="Tổng quan đơn hàng">

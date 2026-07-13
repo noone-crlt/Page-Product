@@ -14,6 +14,8 @@ export default function SidebarFilter() {
     setRatingFilter,
     resetFilters,
     filteredProductsCount,
+    storeCategories,
+    storeBrands,
   } = useApp();
 
   const formatPrice = (value) => new Intl.NumberFormat('vi-VN').format(value);
@@ -30,29 +32,35 @@ export default function SidebarFilter() {
 
       <div className="filter-group">
         <h2>Danh mục</h2>
-        {CATEGORIES.map((category) => (
+        <button
+          className={`filter-option ${activeCategory === 'all' ? 'active' : ''}`}
+          onClick={() => setActiveCategory('all')}
+        >
+          Tất cả
+        </button>
+        {(storeCategories.length > 0 ? storeCategories : CATEGORIES).map((category) => (
           <button
-            key={category.key}
+            key={category.category_id || category.key}
             className={`filter-option ${
-              activeCategory === category.key ? 'active' : ''
+              String(activeCategory) === String(category.category_id || category.key) ? 'active' : ''
             }`}
-            onClick={() => setActiveCategory(category.key)}
+            onClick={() => setActiveCategory(String(category.category_id || category.key))}
           >
-            {category.label}
+            {category.name || category.label}
           </button>
         ))}
       </div>
 
       <div className="filter-group">
         <h2>Thương hiệu</h2>
-        {BRANDS.map((brand) => (
-          <label className="checkbox-option" key={brand}>
+        {(storeBrands.length > 0 ? storeBrands : BRANDS.map(name => ({ brand_id: name, name }))).map((brand) => (
+          <label className="checkbox-option" key={brand.brand_id}>
             <input
               type="checkbox"
-              checked={selectedBrands.includes(brand)}
-              onChange={() => toggleBrand(brand)}
+              checked={selectedBrands.includes(String(brand.brand_id))}
+              onChange={() => toggleBrand(String(brand.brand_id))}
             />
-            <span>{brand}</span>
+            <span>{brand.name}</span>
           </label>
         ))}
       </div>

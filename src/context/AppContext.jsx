@@ -7,7 +7,7 @@ import React, {
   useState,
 } from 'react';
 import { CATEGORIES } from '../constants/productsData';
-import { getProducts } from '../services/productApi';
+import { getProducts, getProductCategories, getProductBrands } from '../services/productApi';
 import { addCartItem, deleteCartItem, getCart } from '../services/cartApi';
 import { clearAuthTokens, getAuthenticatedUser } from '../services/authApi';
 import { getWishlist, toggleWishlist as toggleWishlistApi } from '../services/wishlistApi';
@@ -53,8 +53,10 @@ const inferCategory = (name = '') => {
 const mapProduct = (product) => ({
   id: product.product_id,
   name: product.name,
-  brand: inferBrand(product.name),
-  category: inferCategory(product.name),
+  brand_id: product.brand_id,
+  category_id: product.category_id,
+  brand: product.brand_id ? String(product.brand_id) : inferBrand(product.name),
+  category: product.category_id ? String(product.category_id) : inferCategory(product.name),
   price: Number(product.min_price || 0),
   originalPrice: Number(product.max_price || product.min_price || 0),
   discount: Number(product.discount_percentage || 0),
@@ -110,6 +112,8 @@ export const AppProvider = ({ children }) => {
   const [searchQuery, setSearchQueryState] = useState('');
   const [activeCategory, setActiveCategoryState] = useState('all');
   const [selectedBrands, setSelectedBrands] = useState([]);
+  const [storeCategories, setStoreCategories] = useState([]);
+  const [storeBrands, setStoreBrands] = useState([]);
   const [priceRange, setPriceRangeState] = useState([0, 50000000]);
   const [ratingFilter, setRatingFilterState] = useState(null);
   const [sortBy, setSortByState] = useState('popular');
@@ -229,6 +233,8 @@ export const AppProvider = ({ children }) => {
         // Giữ thông tin từ token nếu API hồ sơ tạm thời không phản hồi.
       });
     syncAccountData();
+    getProductCategories().then(res => setStoreCategories(res?.data || [])).catch(() => {});
+    getProductBrands().then(res => setStoreBrands(res?.data || [])).catch(() => {});
   }, []);
 
   const addToCart = async (product, variant, quantity = 1) => {
@@ -316,17 +322,19 @@ export const AppProvider = ({ children }) => {
     const query = normalize(searchQuery);
     const result = products.filter((product) => {
       const categoryLabel =
-        CATEGORIES.find((item) => item.key === product.category)?.label || '';
+        storeCategories.find((item) => String(item.category_id) === String(product.category_id))?.name || CATEGORIES.find((item) => item.key === product.category)?.label || '';
+      const brandLabel =
+        storeBrands.find((item) => String(item.brand_id) === String(product.brand_id))?.name || product.brand || '';
       const matchesSearch =
         !query ||
-        [product.name, product.brand, categoryLabel].some((value) =>
+        [product.name, brandLabel, categoryLabel].some((value) =>
           normalize(value).includes(query),
         );
 
       return (
         matchesSearch &&
-        (activeCategory === 'all' || product.category === activeCategory) &&
-        (!selectedBrands.length || selectedBrands.includes(product.brand)) &&
+        (activeCategory === 'all' || String(product.category_id) === String(activeCategory) || product.category === activeCategory) &&
+        (!selectedBrands.length || selectedBrands.includes(String(product.brand_id)) || selectedBrands.includes(product.brand)) &&
         product.price >= priceRange[0] &&
         product.price <= priceRange[1] &&
         (ratingFilter === null || product.rating >= ratingFilter)
@@ -373,6 +381,21 @@ export const AppProvider = ({ children }) => {
   const login = async (userData) => {
     setUser(userData);
     setIsAuthOpen(false);
+    
+    getProfile()
+      .then((result) => {
+        const profile = result?.data?.profile ?? result?.data ?? result;
+        if (!profile) return;
+        setUser((current) => ({
+          ...current,
+          name: profile.full_name || profile.name || current?.name || 'Tài khoản',
+          email: profile.email || current?.email || '',
+          phone: profile.phone_number || profile.phone || '',
+          avatarUrl: profile.avatar_url || profile.avatarUrl || '',
+        }));
+      })
+      .catch(() => {});
+
     await syncAccountData({ force: true });
   };
 
@@ -428,6 +451,8 @@ export const AppProvider = ({ children }) => {
         totalPages,
         filteredProductsCount: filteredProducts.length,
         displayedProducts,
+        storeCategories,
+        storeBrands,
         selectedProduct,
         setSelectedProduct,
         isCartOpen,

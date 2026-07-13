@@ -8,6 +8,8 @@ const AdminDashboard = lazy(() => import('./admin/components/AdminDashboard'))
 const AdminProducts = lazy(() => import('./admin/components/AdminProducts'))
 const AdminOrders = lazy(() => import('./admin/components/AdminOrders'))
 const AdminCustomers = lazy(() => import('./admin/components/AdminCustomers'))
+const AdminBrands = lazy(() => import('./admin/components/AdminBrands'))
+const AdminCategories = lazy(() => import('./admin/components/AdminCategories'))
 
 function App() {
   const isAdminPage = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')
@@ -30,11 +32,15 @@ function App() {
 
       const AdminPage = window.location.pathname.startsWith('/admin/products')
         ? AdminProducts
-        : window.location.pathname.startsWith('/admin/orders')
-          ? AdminOrders
-          : window.location.pathname.startsWith('/admin/customers')
-            ? AdminCustomers
-            : AdminDashboard
+        : window.location.pathname.startsWith('/admin/categories')
+          ? AdminCategories
+          : window.location.pathname.startsWith('/admin/brands')
+            ? AdminBrands
+            : window.location.pathname.startsWith('/admin/orders')
+              ? AdminOrders
+              : window.location.pathname.startsWith('/admin/customers')
+                ? AdminCustomers
+                : AdminDashboard
 
       return (
         <Suspense fallback={<div className="admin-route-loading" aria-live="polite">Đang tải trang quản trị...</div>}>

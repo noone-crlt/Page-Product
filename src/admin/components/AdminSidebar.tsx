@@ -1,11 +1,13 @@
 import { useApp } from '../../context/AppContext';
 import { useNotifications } from '../hooks/useNotifications';
-import { ChartLineUp, House, Receipt, Package, Users, Megaphone, Storefront, SignOut, X } from '@phosphor-icons/react';
+import { ChartLineUp, House, Receipt, Package, Users, Megaphone, Storefront, SignOut, X, FolderOpen } from '@phosphor-icons/react';
 
 const sidebarItems = [
   { label: 'Tổng quan', icon: House, href: '/admin' },
   { label: 'Đơn hàng', icon: Receipt, href: '/admin/orders' },
   { label: 'Sản phẩm', icon: Package, href: '/admin/products' },
+  { label: 'Danh mục', icon: FolderOpen, href: '/admin/categories' },
+  { label: 'Thương hiệu', icon: Storefront, href: '/admin/brands' },
   { label: 'Khách hàng', icon: Users, href: '/admin/customers' },
   { label: 'Marketing', icon: Megaphone, href: '/admin/marketing' },
 ];

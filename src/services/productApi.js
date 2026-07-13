@@ -19,8 +19,42 @@ export const getProductById = (productId) =>
 export const getProductCategories = () =>
   apiClient('/api/categories?page=1&limit=100');
 
+export const createCategory = (category) =>
+  apiClient('/api/categories', {
+    method: 'POST',
+    body: JSON.stringify(category),
+  });
+
+export const updateCategory = (categoryId, category) =>
+  apiClient(`/api/categories/${encodeURIComponent(categoryId)}`, {
+    method: 'PUT',
+    body: JSON.stringify(category),
+  });
+
+export const deleteCategory = (categoryId) =>
+  apiClient(`/api/categories/${encodeURIComponent(categoryId)}`, {
+    method: 'DELETE',
+  });
+
 export const getProductBrands = () =>
   apiClient('/api/brands?page=1&limit=100');
+
+export const createBrand = (brand) =>
+  apiClient('/api/brands', {
+    method: 'POST',
+    body: JSON.stringify(brand),
+  });
+
+export const updateBrand = (brandId, brand) =>
+  apiClient(`/api/brands/${encodeURIComponent(brandId)}`, {
+    method: 'PUT',
+    body: JSON.stringify(brand),
+  });
+
+export const deleteBrand = (brandId) =>
+  apiClient(`/api/brands/${encodeURIComponent(brandId)}`, {
+    method: 'DELETE',
+  });
 
 export const createProduct = (product) =>
   apiClient('/api/products', {
