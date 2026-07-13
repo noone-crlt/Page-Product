@@ -38,7 +38,7 @@ export default function SidebarFilter() {
         >
           Tất cả
         </button>
-        {(storeCategories.length > 0 ? storeCategories : CATEGORIES).map((category) => (
+        {(storeCategories.length > 0 ? storeCategories : CATEGORIES.filter(c => c.key !== 'all')).map((category) => (
           <button
             key={category.category_id || category.key}
             className={`filter-option ${
