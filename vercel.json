@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://myapp-fmoh.onrender.com/api/:path*"
+    },
+    {
+      "source": "/paymentHub/:path*",
+      "destination": "https://myapp-fmoh.onrender.com/paymentHub/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
