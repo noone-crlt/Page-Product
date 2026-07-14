@@ -281,7 +281,7 @@ export default function AdminCustomers() {
           {/* Table */}
           <section className="admin-orders-panel">
             {error && <p className="admin-form-error admin-customers-error" role="alert">{error}</p>}
-            <div className="admin-table-wrap admin-orders-table">
+            <div className="admin-table-wrap">
               <table>
                 <thead>
                   <tr>

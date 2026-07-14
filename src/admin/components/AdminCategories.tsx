@@ -56,7 +56,7 @@ export default function AdminCategories() {
     if (n.includes('điện thoại') || n.includes('phone')) return DeviceMobile;
     if (n.includes('laptop') || n.includes('máy tính')) return Laptop;
     if (n.includes('tablet') || n.includes('máy tính bảng') || n.includes('ipad')) return DeviceTablet;
-    if (n.includes('tai nghe') || n.includes('audio')) return Headphones;
+    if (n.includes('tai nghe') || n.includes('audio') || n.includes('âm thanh')) return Headphones;
     if (n.includes('đồng hồ') || n.includes('watch')) return Watch;
     if (n.includes('loa') || n.includes('speaker')) return SpeakerHifi;
     if (n.includes('màn hình') || n.includes('monitor')) return Monitor;
@@ -169,6 +169,13 @@ export default function AdminCategories() {
               <button className="admin-add-product-button" onClick={openCreate}>
                 <Plus size={18} weight="bold" />Thêm danh mục
               </button>
+              <div className="admin-products-count">
+                <FolderOpen size={19} />
+                <span>
+                  <small>Tổng danh mục</small>
+                  <strong>{categories.length.toLocaleString('vi-VN')}</strong>
+                </span>
+              </div>
             </div>
           </section>
 
@@ -194,30 +201,31 @@ export default function AdminCategories() {
                 <table>
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Tên danh mục</th>
+                      <th>Danh mục</th>
                       <th style={{ textAlign: 'right' }}>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredCategories.map(category => (
                       <tr key={category.category_id}>
-                        <td><strong>#{category.category_id}</strong></td>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--admin-accent-bg, #ede9fe)', borderRadius: '8px' }}>
-                              {React.createElement(getCategoryIcon(category.name), { size: 18, color: "var(--admin-accent, #7c3aed)", weight: "duotone" })}
-                            </div>
+                          <div style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--admin-accent-bg, #ede9fe)', borderRadius: '8px' }}>
+                            {React.createElement(getCategoryIcon(category.name), { size: 18, color: "var(--admin-accent, #7c3aed)", weight: "duotone" })}
+                          </div>
+                          <div>
                             <strong>{category.name}</strong>
+                            <small>ID: #{category.category_id}</small>
                           </div>
                         </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <button className="admin-icon-button" onClick={() => openEdit(category)}>
-                            <PencilSimple size={16} />
-                          </button>
-                          <button className="admin-icon-button is-danger" onClick={() => setDeletingCategory(category)}>
-                            <Trash size={16} />
-                          </button>
+                        <td>
+                          <div className="admin-product-actions" style={{ justifyContent: 'flex-end' }}>
+                            <button className="admin-icon-button" onClick={() => openEdit(category)}>
+                              <PencilSimple size={16} />
+                            </button>
+                            <button className="admin-icon-button is-danger" onClick={() => setDeletingCategory(category)}>
+                              <Trash size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -258,9 +266,9 @@ export default function AdminCategories() {
               
               {formError && <p className="admin-form-error">{formError}</p>}
               
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
+              <div className="admin-dialog-actions">
                 <button type="button" className="admin-button-secondary" disabled={isSaving} onClick={() => (setIsCreateOpen(false), setEditingCategory(null))}>Hủy</button>
-                <button type="submit" className="admin-button-primary" disabled={isSaving}>{isSaving ? 'Đang lưu...' : 'Lưu danh mục'}</button>
+                <button type="submit" className="admin-button-primary admin-create-submit" disabled={isSaving}>{isSaving ? 'Đang lưu...' : 'Lưu danh mục'}</button>
               </div>
             </form>
           </div>
@@ -277,9 +285,9 @@ export default function AdminCategories() {
               Bạn sắp xóa danh mục <strong>{deletingCategory.name}</strong>. Hành động này không thể hoàn tác.
             </p>
             {formError && <p className="admin-form-error" style={{ marginBottom: '16px' }}>{formError}</p>}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+            <div className="admin-dialog-actions" style={{ justifyContent: 'center' }}>
               <button type="button" className="admin-button-secondary" disabled={isSaving} onClick={() => setDeletingCategory(null)}>Hủy</button>
-              <button type="button" className="admin-button-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }} disabled={isSaving} onClick={handleDelete}>{isSaving ? 'Đang xóa...' : 'Xóa ngay'}</button>
+              <button type="button" className="admin-button-danger" disabled={isSaving} onClick={handleDelete}>{isSaving ? 'Đang xóa...' : 'Xóa ngay'}</button>
             </div>
           </div>
         </div>

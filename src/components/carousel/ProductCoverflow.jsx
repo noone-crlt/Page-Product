@@ -13,7 +13,7 @@ const THEMES = [
 ];
 
 export default function ProductCoverflow() {
-  const { displayedProducts, storeBrands } = useApp();
+  const { products, storeBrands } = useApp();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -22,8 +22,8 @@ export default function ProductCoverflow() {
 
   // Lấy tối đa 6 sản phẩm đầu tiên có ảnh hợp lệ
   const carouselProducts = useMemo(() => {
-    if (!displayedProducts || displayedProducts.length === 0) return [];
-    return displayedProducts.slice(0, 6).map((product, index) => {
+    if (!products || products.length === 0) return [];
+    return products.slice(0, 6).map((product, index) => {
       const theme = THEMES[index % THEMES.length];
       
       let finalBrand = product.brand?.name || product.brand || 'Khác';
@@ -46,7 +46,7 @@ export default function ProductCoverflow() {
         ghostText: ghostText.length > 8 ? ghostText.substring(0, 8) : ghostText
       };
     });
-  }, [displayedProducts, storeBrands]);
+  }, [products, storeBrands]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);

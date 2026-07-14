@@ -192,6 +192,13 @@ export default function AdminBrands() {
               <button className="admin-add-product-button" onClick={openCreate}>
                 <Plus size={18} weight="bold" />Thêm thương hiệu
               </button>
+              <div className="admin-products-count">
+                <Tag size={19} />
+                <span>
+                  <small>Tổng thương hiệu</small>
+                  <strong>{brands.length.toLocaleString('vi-VN')}</strong>
+                </span>
+              </div>
             </div>
           </section>
 
@@ -217,34 +224,35 @@ export default function AdminBrands() {
                 <table>
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Tên thương hiệu</th>
+                      <th>Thương hiệu</th>
                       <th style={{ textAlign: 'right' }}>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredBrands.map(brand => (
                       <tr key={brand.brand_id}>
-                        <td><strong>#{brand.brand_id}</strong></td>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            {brand.logo_url ? (
-                              <img src={brand.logo_url} alt={brand.name} style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '4px', border: '1px solid #e2e8f0', background: '#fff' }} />
-                            ) : (
-                              <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                                <Tag size={16} color="var(--admin-muted)" />
-                              </div>
-                            )}
+                          {brand.logo_url ? (
+                            <img src={brand.logo_url} alt={brand.name} style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '4px', border: '1px solid #e2e8f0', background: '#fff' }} />
+                          ) : (
+                            <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                              <Tag size={16} color="var(--admin-muted)" />
+                            </div>
+                          )}
+                          <div>
                             <strong>{brand.name}</strong>
+                            <small>ID: #{brand.brand_id}</small>
                           </div>
                         </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <button className="admin-icon-button" onClick={() => openEdit(brand)}>
-                            <PencilSimple size={16} />
-                          </button>
-                          <button className="admin-icon-button is-danger" onClick={() => setDeletingBrand(brand)}>
-                            <Trash size={16} />
-                          </button>
+                        <td>
+                          <div className="admin-product-actions" style={{ justifyContent: 'flex-end' }}>
+                            <button className="admin-icon-button" onClick={() => openEdit(brand)}>
+                              <PencilSimple size={16} />
+                            </button>
+                            <button className="admin-icon-button is-danger" onClick={() => setDeletingBrand(brand)}>
+                              <Trash size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -299,9 +307,9 @@ export default function AdminBrands() {
               
               {formError && <p className="admin-form-error">{formError}</p>}
               
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
+              <div className="admin-dialog-actions">
                 <button type="button" className="admin-button-secondary" disabled={isSaving} onClick={() => (setIsCreateOpen(false), setEditingBrand(null))}>Hủy</button>
-                <button type="submit" className="admin-button-primary" disabled={isSaving}>{isSaving ? 'Đang lưu...' : 'Lưu thương hiệu'}</button>
+                <button type="submit" className="admin-button-primary admin-create-submit" disabled={isSaving}>{isSaving ? 'Đang lưu...' : 'Lưu thương hiệu'}</button>
               </div>
             </form>
           </div>
@@ -318,9 +326,9 @@ export default function AdminBrands() {
               Bạn sắp xóa thương hiệu <strong>{deletingBrand.name}</strong>. Hành động này không thể hoàn tác.
             </p>
             {formError && <p className="admin-form-error" style={{ marginBottom: '16px' }}>{formError}</p>}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+            <div className="admin-dialog-actions" style={{ justifyContent: 'center' }}>
               <button type="button" className="admin-button-secondary" disabled={isSaving} onClick={() => setDeletingBrand(null)}>Hủy</button>
-              <button type="button" className="admin-button-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }} disabled={isSaving} onClick={handleDelete}>{isSaving ? 'Đang xóa...' : 'Xóa ngay'}</button>
+              <button type="button" className="admin-button-danger" disabled={isSaving} onClick={handleDelete}>{isSaving ? 'Đang xóa...' : 'Xóa ngay'}</button>
             </div>
           </div>
         </div>
