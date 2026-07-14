@@ -3,6 +3,7 @@ import { AppProvider } from './context/AppContext'
 import ProductsPage from './pages/ProductsPage'
 import { canAccessDashboard } from './services/authApi'
 import ChatBubble from './components/chat/ChatBubble'
+import AdminChatBubble from './admin/components/AdminChatBubble'
 
 const AdminDashboard = lazy(() => import('./admin/components/AdminDashboard'))
 const AdminProducts = lazy(() => import('./admin/components/AdminProducts'))
@@ -60,6 +61,7 @@ function App() {
     <AppProvider>
       {renderContent()}
       {!isAdminPage && <ChatBubble />}
+      {isAdminPage && canAccessDashboard() && <AdminChatBubble />}
     </AppProvider>
   )
 }

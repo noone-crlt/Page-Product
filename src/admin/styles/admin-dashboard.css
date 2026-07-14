@@ -145,3 +145,9 @@
 .admin-kanban-card__footer { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px dashed var(--admin-line); }
 .admin-kanban-card__footer small { color: var(--admin-muted); font-size: 10px; font-weight: 600; }
 .admin-kanban-card__footer strong { color: var(--admin-ink); font-size: 12px; font-weight: 800; }
+
+/* Danh sách thông báo cuộn dọc, không cần nút xem thêm. */
+.admin-panel--notice .admin-notice-list { max-height: 300px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(20, 99, 223, 0.28) transparent; }
+.admin-panel--notice .admin-notice-list::-webkit-scrollbar { width: 5px; }
+.admin-panel--notice .admin-notice-list::-webkit-scrollbar-track { background: transparent; }
+.admin-panel--notice .admin-notice-list::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(20, 99, 223, 0.28); }

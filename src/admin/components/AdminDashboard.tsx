@@ -122,7 +122,6 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [showAllNotifs, setShowAllNotifs] = useState(false);
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
 
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null]>([dayjs().subtract(7, 'day'), dayjs()]);
@@ -350,7 +349,7 @@ export default function AdminDashboard() {
                     <small>{appUser?.email || 'Quản trị viên'}</small>
                   </div>
                   <div className="admin-profile-dropdown__menu">
-                    <button><House size={16} />Trang chủ cửa hàng</button>
+                    <button onClick={() => window.location.href = '/'}><House size={16} />Trang chủ cửa hàng</button>
                     <hr />
                     <button className="is-danger" onClick={logout}><SignOut size={16} />Đăng xuất an toàn</button>
                   </div>
@@ -396,7 +395,7 @@ export default function AdminDashboard() {
                     <b>{unreadCount}</b>
                   </div>
                   <div className="admin-notice-list">
-                    {(showAllNotifs ? notifications : notifications.slice(0, 4)).map((item) => { 
+                    {notifications.map((item) => {
                       const Icon = notificationIcons[item.kind]; 
                       return (
                         <div key={item.id} className={item.unread ? 'is-unread' : ''} style={{ cursor: item.targetType === 'Order' ? 'pointer' : 'default' }} onClick={() => { if(item.targetType === 'Order' && item.targetId) window.location.href = `/admin/orders?id=${item.targetId}` }}>
@@ -406,16 +405,6 @@ export default function AdminDashboard() {
                       ); 
                     })}
                   </div>
-                  {notifications.length > 4 && (
-                    <button 
-                      onClick={() => setShowAllNotifs(!showAllNotifs)} 
-                      style={{ marginTop: '16px', width: '100%', padding: '8px', border: '1px solid var(--admin-line)', background: 'transparent', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: 'var(--admin-muted)', fontWeight: 600, transition: '0.2s' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = 'var(--admin-ink)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--admin-muted)'; }}
-                    >
-                      {showAllNotifs ? 'Thu gọn' : `Xem thêm ${notifications.length - 4} thông báo`}
-                    </button>
-                  )}
                 </article>
               </section>
 

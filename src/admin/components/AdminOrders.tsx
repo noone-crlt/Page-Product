@@ -306,7 +306,7 @@ export default function AdminOrders() {
             {profileOpen && (
               <div className="admin-profile-dropdown">
                 <div className="admin-profile-dropdown__header"><strong>{userName}</strong><small>{appUser?.email || 'Quản trị viên'}</small></div>
-                <div className="admin-profile-dropdown__menu"><button><House size={16} />Trang chủ cửa hàng</button><hr /><button className="is-danger" onClick={logout}><SignOut size={16} />Đăng xuất an toàn</button></div>
+                <div className="admin-profile-dropdown__menu"><button onClick={() => window.location.href = '/'}><House size={16} />Trang chủ cửa hàng</button><hr /><button className="is-danger" onClick={logout}><SignOut size={16} />Đăng xuất an toàn</button></div>
               </div>
             )}
           </div>

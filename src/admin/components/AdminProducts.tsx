@@ -651,7 +651,7 @@ export default function AdminProducts() {
                   <small>{appUser?.email || 'Quản trị viên'}</small>
                 </div>
                 <div className="admin-profile-dropdown__menu">
-                  <button><House size={16} />Trang chủ cửa hàng</button>
+                  <button onClick={() => window.location.href = '/'}><House size={16} />Trang chủ cửa hàng</button>
                   <hr />
                   <button className="is-danger" onClick={logout}><SignOut size={16} />Đăng xuất an toàn</button>
                 </div>

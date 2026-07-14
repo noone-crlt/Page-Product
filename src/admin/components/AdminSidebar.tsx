@@ -1,6 +1,5 @@
-import { useApp } from '../../context/AppContext';
 import { useNotifications } from '../hooks/useNotifications';
-import { ChartLineUp, House, Receipt, Package, Users, Megaphone, Storefront, SignOut, X, FolderOpen } from '@phosphor-icons/react';
+import { ChartLineUp, House, Receipt, Package, Users, Megaphone, Storefront, X, FolderOpen } from '@phosphor-icons/react';
 
 const sidebarItems = [
   { label: 'Tổng quan', icon: House, href: '/admin' },
@@ -13,17 +12,7 @@ const sidebarItems = [
 ];
 
 export function AdminSidebar({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; setSidebarOpen: (val: boolean) => void }) {
-  const { user, logout } = useApp();
   const { unreadCount } = useNotifications();
-  
-  const appUser = user as { name?: string; email?: string } | null;
-  const userName = appUser?.name || '';
-  const userRole = appUser?.email || 'Quản trị viên';
-  const userInitials = userName 
-    ? (userName.split(' ').length >= 2 
-        ? (userName.split(' ')[0][0] + userName.split(' ')[userName.split(' ').length - 1][0]).toUpperCase() 
-        : userName.substring(0, 2).toUpperCase())
-    : 'AD';
 
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
 
@@ -54,15 +43,6 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boo
             );
           })}
         </nav>
-        
-        <div className="admin-sidebar__bottom">
-          <a href="/"><Storefront size={19} />Xem cửa hàng</a>
-          <div className="admin-profile-mini">
-            <span>{userInitials}</span>
-            <div><strong>{userName}</strong><small>{userRole}</small></div>
-            <SignOut size={18} onClick={logout} style={{ cursor: 'pointer' }} />
-          </div>
-        </div>
       </aside>
     </>
   );
