@@ -13,7 +13,7 @@ const THEMES = [
 ];
 
 export default function ProductCoverflow() {
-  const { displayedProducts } = useApp();
+  const { displayedProducts, storeBrands } = useApp();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -25,12 +25,19 @@ export default function ProductCoverflow() {
     if (!displayedProducts || displayedProducts.length === 0) return [];
     return displayedProducts.slice(0, 6).map((product, index) => {
       const theme = THEMES[index % THEMES.length];
-      const ghostText = (product.brand?.name || product.brand || 'STORE').toUpperCase();
+      
+      let finalBrand = product.brand?.name || product.brand || 'Khác';
+      if (storeBrands?.length > 0 && !isNaN(finalBrand)) {
+        const found = storeBrands.find(b => String(b.brand_id) === String(finalBrand));
+        if (found) finalBrand = found.name;
+      }
+      
+      const ghostText = (finalBrand === 'Khác' ? 'STORE' : finalBrand).toUpperCase();
       
       return {
         id: product.id,
         name: product.name,
-        brand: product.brand?.name || product.brand || 'Thương hiệu',
+        brand: finalBrand,
         price: new Intl.NumberFormat('vi-VN').format(product.price) + 'đ',
         description: product.description || 'Sản phẩm chính hãng chất lượng cao.',
         image: product.image,
@@ -39,7 +46,7 @@ export default function ProductCoverflow() {
         ghostText: ghostText.length > 8 ? ghostText.substring(0, 8) : ghostText
       };
     });
-  }, [displayedProducts]);
+  }, [displayedProducts, storeBrands]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);

@@ -35,8 +35,13 @@ const normalize = (value = '') =>
     .trim();
 
 const inferBrand = (name = '') => {
-  const brands = ['Apple', 'Samsung', 'Xiaomi', 'ASUS', 'Dell', 'Sony', 'Logitech'];
-  return brands.find((brand) => normalize(name).includes(normalize(brand))) || 'Khác';
+  const normalized = normalize(name);
+  if (normalized.includes('mac') || normalized.includes('ipad') || normalized.includes('iphone') || normalized.includes('airpods') || normalized.includes('apple') || normalized.includes('imac')) return 'Apple';
+  if (normalized.includes('galaxy') || normalized.includes('samsung')) return 'Samsung';
+  if (normalized.includes('zenbook') || normalized.includes('rog') || normalized.includes('asus')) return 'ASUS';
+  if (normalized.includes('inspiron') || normalized.includes('alienware') || normalized.includes('xps') || normalized.includes('dell')) return 'Dell';
+  const brands = ['Xiaomi', 'Sony', 'Logitech'];
+  return brands.find((brand) => normalized.includes(normalize(brand))) || 'Khác';
 };
 
 const inferCategory = (name = '') => {
@@ -66,7 +71,7 @@ const mapProduct = (product) => ({
   stock: 0,
   image: product.thumbnail_url || product.image_url || product.images?.[0]?.image_url || 'https://picsum.photos/seed/product/720/720',
   createdAt: null,
-  description: 'Thông tin chi tiết sản phẩm sẽ được cập nhật từ hệ thống.',
+  description: product.description || 'Thông tin chi tiết sản phẩm sẽ được cập nhật từ hệ thống.',
   colors: [],
   capacities: [],
   variants: [],
@@ -334,7 +339,7 @@ export const AppProvider = ({ children }) => {
       return (
         matchesSearch &&
         (activeCategory === 'all' || String(product.category_id) === String(activeCategory) || product.category === activeCategory) &&
-        (!selectedBrands.length || selectedBrands.includes(String(product.brand_id)) || selectedBrands.includes(product.brand)) &&
+        (!selectedBrands.length || selectedBrands.includes(String(product.brand_id)) || selectedBrands.includes(product.brand) || selectedBrands.includes(brandLabel)) &&
         product.price >= priceRange[0] &&
         product.price <= priceRange[1] &&
         (ratingFilter === null || product.rating >= ratingFilter)

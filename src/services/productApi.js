@@ -9,12 +9,13 @@ export const getProducts = (params = {}) => {
     }
   });
 
+  query.set('t', String(Date.now()));
   const suffix = query.size ? `?${query.toString()}` : '';
   return apiClient(`/api/products${suffix}`);
 };
 
 export const getProductById = (productId) =>
-  apiClient(`/api/products/${encodeURIComponent(productId)}`);
+  apiClient(`/api/products/${encodeURIComponent(productId)}?t=${Date.now()}`);
 
 export const getProductCategories = () =>
   apiClient('/api/categories?page=1&limit=100');

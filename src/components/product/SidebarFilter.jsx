@@ -30,26 +30,7 @@ export default function SidebarFilter() {
         <button onClick={resetFilters}>Đặt lại</button>
       </div>
 
-      <div className="filter-group">
-        <h2>Danh mục</h2>
-        <button
-          className={`filter-option ${activeCategory === 'all' ? 'active' : ''}`}
-          onClick={() => setActiveCategory('all')}
-        >
-          Tất cả
-        </button>
-        {(storeCategories.length > 0 ? storeCategories : CATEGORIES.filter(c => c.key !== 'all')).map((category) => (
-          <button
-            key={category.category_id || category.key}
-            className={`filter-option ${
-              String(activeCategory) === String(category.category_id || category.key) ? 'active' : ''
-            }`}
-            onClick={() => setActiveCategory(String(category.category_id || category.key))}
-          >
-            {category.name || category.label}
-          </button>
-        ))}
-      </div>
+
 
       <div className="filter-group">
         <h2>Thương hiệu</h2>
@@ -57,8 +38,8 @@ export default function SidebarFilter() {
           <label className="checkbox-option" key={brand.brand_id}>
             <input
               type="checkbox"
-              checked={selectedBrands.includes(String(brand.brand_id))}
-              onChange={() => toggleBrand(String(brand.brand_id))}
+              checked={selectedBrands.includes(brand.name)}
+              onChange={() => toggleBrand(brand.name)}
             />
             <span>{brand.name}</span>
           </label>

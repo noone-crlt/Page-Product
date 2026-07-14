@@ -574,6 +574,7 @@ export default function AdminProducts() {
         ...(editForm.category_id ? { category_id: Number(editForm.category_id) } : {}),
         ...(editForm.brand_id ? { brand_id: Number(editForm.brand_id) } : {}),
         name,
+        description: editForm.description.trim(),
         thumbnail_url: thumbnailUrl,
         is_featured: editForm.is_featured,
         variants: existingVariants,
